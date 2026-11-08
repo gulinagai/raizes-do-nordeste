@@ -24,9 +24,9 @@ Estas peças já estão configuradas no projeto:
 O código fica no pacote `br.edu.uninter.raizes` e está separado em quatro camadas:
 
 - `api` — reservada para a interface HTTP, com os pacotes `controller`, `dto` e `erro`
-- `aplicacao` — reservada para os serviços, no pacote `servico`
-- `dominio` — reservada para o modelo, com os pacotes `entidade`, `enumeracao` e `excecao`
-- `infraestrutura` — reservada para os detalhes técnicos, com os pacotes `persistencia`, `pagamento`, `seguranca` e `auditoria`
+- `application` — reservada para os serviços, no pacote `servico`
+- `domain` — reservada para o modelo, com os pacotes `entidade`, `enumeracao` e `excecao`
+- `infrastructure` — reservada para os detalhes técnicos, com os pacotes `persistencia`, `pagamento`, `seguranca` e `auditoria`
 
 A única classe existente é `RaizesDoNordesteApplication`. Os demais pacotes ainda não têm classes.
 
@@ -129,13 +129,13 @@ raizes-do-nordeste/
 │   │   ├── controller/
 │   │   ├── dto/
 │   │   └── erro/
-│   ├── aplicacao/
+│   ├── application/
 │   │   └── servico/
-│   ├── dominio/
+│   ├── domain/
 │   │   ├── entidade/
 │   │   ├── enumeracao/
 │   │   └── excecao/
-│   └── infraestrutura/
+│   └── infrastructure/
 │       ├── auditoria/
 │       ├── pagamento/
 │       ├── persistencia/
@@ -153,4 +153,4 @@ raizes-do-nordeste/
 └── README.md
 ```
 
-Os diretórios de `api`, `aplicacao`, `dominio` e `infraestrutura` estão vazios de classes. A pasta `db/migration` ainda não contém scripts SQL.
+Os diretórios de `api`, `application`, `domain` e `infrastructure` estão vazios de classes. A pasta `db/migration` ainda não contém scripts SQL.
