@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: raizes-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-raizes}
+      POSTGRES_USER: ${POSTGRES_USER:-raizes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-raizes}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - raizes-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - raizes
+
+  api:
+    build: .
+    image: raizes-do-nordeste-api
+    container_name: raizes-api
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-raizes}
+      DB_USER: ${POSTGRES_USER:-raizes}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-raizes}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - raizes
+
+volumes:
+  raizes-postgres-data:
+
+networks:
+  raizes:

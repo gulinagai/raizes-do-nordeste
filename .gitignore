@@ -1,3 +1,9 @@
+# Variáveis de ambiente locais. O exemplo versionado é o .env.example.
+.env
+
+# Maven
+target/
+
 # Compiled class file
 *.class
 
