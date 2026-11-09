@@ -37,6 +37,14 @@ public class Usuario {
     protected Usuario() {
     }
 
+    public Usuario(String nome, String email, String senhaHash, Perfil perfil, boolean ativo) {
+        this.nome = nome;
+        this.email = email;
+        this.senhaHash = senhaHash;
+        this.perfil = perfil;
+        this.ativo = ativo;
+    }
+
     public Long getId() {
         return id;
     }
