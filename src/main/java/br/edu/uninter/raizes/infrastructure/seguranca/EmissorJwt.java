@@ -1,9 +1,11 @@
 package br.edu.uninter.raizes.infrastructure.seguranca;
 
 import br.edu.uninter.raizes.domain.entidade.Usuario;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -35,5 +37,22 @@ public class EmissorJwt {
 
     public long expiracaoSegundos() {
         return expiracaoSegundos;
+    }
+
+    public Optional<Long> identificar(String token) {
+        try {
+            String sujeito = Jwts.parser()
+                    .verifyWith(chave)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+            if (sujeito == null || sujeito.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(Long.valueOf(sujeito));
+        } catch (JwtException | IllegalArgumentException excecao) {
+            return Optional.empty();
+        }
     }
 }

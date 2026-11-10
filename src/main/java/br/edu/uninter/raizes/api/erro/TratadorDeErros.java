@@ -3,19 +3,17 @@ package br.edu.uninter.raizes.api.erro;
 import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class TratadorDeErros {
@@ -69,6 +67,19 @@ public class TratadorDeErros {
                 requisicao);
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErroResposta> tratarRecursoInexistente(
+            NoResourceFoundException excecao, HttpServletRequest requisicao) {
+        return resposta(HttpStatus.NOT_FOUND, "NAO_ENCONTRADO", "Recurso não encontrado.", List.of(), requisicao);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErroResposta> tratarMetodoNaoPermitido(
+            HttpRequestMethodNotSupportedException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.METHOD_NOT_ALLOWED, "METODO_NAO_PERMITIDO", "Método não permitido.", List.of(), requisicao);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErroResposta> tratarErroInesperado(Exception excecao, HttpServletRequest requisicao) {
         log.error("Falha inesperada ao processar {}", requisicao.getRequestURI(), excecao);
@@ -86,13 +97,7 @@ public class TratadorDeErros {
             String message,
             List<DetalheErro> details,
             HttpServletRequest requisicao) {
-        ErroResposta corpo = new ErroResposta(
-                error,
-                message,
-                details,
-                DateTimeFormatter.ISO_INSTANT.format(Instant.now().truncatedTo(ChronoUnit.SECONDS)),
-                requisicao.getRequestURI(),
-                UUID.randomUUID().toString());
-        return ResponseEntity.status(status).body(corpo);
+        return ResponseEntity.status(status)
+                .body(ErroResposta.de(error, message, details, requisicao.getRequestURI()));
     }
 }
