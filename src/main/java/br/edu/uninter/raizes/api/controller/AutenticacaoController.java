@@ -5,7 +5,10 @@ import br.edu.uninter.raizes.api.dto.LoginResposta;
 import br.edu.uninter.raizes.api.dto.UsuarioResposta;
 import br.edu.uninter.raizes.application.servico.AutenticacaoServico;
 import br.edu.uninter.raizes.application.servico.AutenticacaoServico.ResultadoLogin;
+import br.edu.uninter.raizes.infrastructure.seguranca.UsuarioAutenticado;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,5 +32,10 @@ public class AutenticacaoController {
                 "Bearer",
                 resultado.expiresIn(),
                 UsuarioResposta.de(resultado.usuario()));
+    }
+
+    @GetMapping("/me")
+    public UsuarioResposta eu(@AuthenticationPrincipal UsuarioAutenticado autenticado) {
+        return new UsuarioResposta(autenticado.id(), autenticado.nome(), autenticado.perfil());
     }
 }
