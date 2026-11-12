@@ -246,6 +246,45 @@ class ConsultaCardapioTest {
         assertEquals(12, quantidade(filial, "Carne de sol com macaxeira"));
     }
 
+    @Test
+    void ordenaPeloNomeEDesempataPeloId() throws Exception {
+        produtos.saveAndFlush(new Produto("Nome Igual Cardapio", "Primeiro id.", new BigDecimal("1.00"), true));
+        produtos.saveAndFlush(new Produto("Nome Igual Cardapio", "Segundo id.", new BigDecimal("2.00"), true));
+
+        List<Number> ids = JsonPath.read(cardapio(unidade(MATRIZ).getId(), 50),
+                "$.itens[?(@.nome == 'Nome Igual Cardapio')].produtoId");
+
+        assertEquals(2, ids.size());
+        assertTrue(ids.get(0).longValue() < ids.get(1).longValue());
+    }
+
+    @Test
+    void cardapioUsaDisponivelDepoisDaSaida() throws Exception {
+        Unidade matriz = unidade(MATRIZ);
+        Unidade filial = unidade(FILIAL);
+        Produto produto = produtos.saveAndFlush(
+                new Produto("Produto Saldo Cardapio", "Liga saída e cardápio.", new BigDecimal("21.50"), true));
+        estoques.saveAndFlush(new Estoque(matriz, produto, 10, 4));
+        estoques.saveAndFlush(new Estoque(filial, produto, 9, 0));
+
+        mockMvc.perform(post("/estoque/movimentacoes")
+                        .header("Authorization", "Bearer " + token())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"unidadeId":%d,"produtoId":%d,"tipo":"SAIDA","quantidade":3}
+                                """.formatted(matriz.getId(), produto.getId())))
+                .andExpect(status().isCreated());
+
+        String daMatriz = cardapio(matriz.getId(), 50);
+        assertEquals(3, quantidade(daMatriz, "Produto Saldo Cardapio"));
+        assertTrue(disponivel(daMatriz, "Produto Saldo Cardapio"));
+        assertEquals(21.50, preco(daMatriz, "Produto Saldo Cardapio"), 0.001);
+
+        String daFilial = cardapio(filial.getId(), 50);
+        assertEquals(9, quantidade(daFilial, "Produto Saldo Cardapio"));
+        assertTrue(disponivel(daFilial, "Produto Saldo Cardapio"));
+    }
+
     private void esperarValidacao(
             long unidadeId, String token, String nome1, String valor1, String nome2, String valor2, String campo, String mensagem)
             throws Exception {
