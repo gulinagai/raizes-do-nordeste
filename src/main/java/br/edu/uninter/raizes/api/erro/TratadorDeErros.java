@@ -2,6 +2,7 @@ package br.edu.uninter.raizes.api.erro;
 
 import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
+import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,17 @@ public class TratadorDeErros {
                 "EMAIL_JA_CADASTRADO",
                 "E-mail já cadastrado.",
                 List.of(new DetalheErro("email", "já cadastrado")),
+                requisicao);
+    }
+
+    @ExceptionHandler(EstoqueInsuficienteException.class)
+    public ResponseEntity<ErroResposta> tratarEstoqueInsuficiente(
+            EstoqueInsuficienteException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "ESTOQUE_INSUFICIENTE",
+                "Não há quantidade disponível suficiente.",
+                List.of(new DetalheErro("quantidade", "Disponível: " + excecao.getDisponivel())),
                 requisicao);
     }
 
