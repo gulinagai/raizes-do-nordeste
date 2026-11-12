@@ -2,6 +2,8 @@ package br.edu.uninter.raizes.api.erro;
 
 import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
+import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
+import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.slf4j.Logger;
@@ -13,6 +15,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -67,10 +70,41 @@ public class TratadorDeErros {
                 requisicao);
     }
 
+    @ExceptionHandler(RecursoNaoEncontradoException.class)
+    public ResponseEntity<ErroResposta> tratarRecursoNaoEncontrado(
+            RecursoNaoEncontradoException excecao, HttpServletRequest requisicao) {
+        return resposta(HttpStatus.NOT_FOUND, "NAO_ENCONTRADO", "Recurso não encontrado.", List.of(), requisicao);
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErroResposta> tratarRecursoInexistente(
             NoResourceFoundException excecao, HttpServletRequest requisicao) {
         return resposta(HttpStatus.NOT_FOUND, "NAO_ENCONTRADO", "Recurso não encontrado.", List.of(), requisicao);
+    }
+
+    @ExceptionHandler(ParametrosInvalidosException.class)
+    public ResponseEntity<ErroResposta> tratarParametrosInvalidos(
+            ParametrosInvalidosException excecao, HttpServletRequest requisicao) {
+        List<DetalheErro> detalhes = excecao.getCampos().stream()
+                .map(campo -> new DetalheErro(campo.nome(), campo.mensagem()))
+                .toList();
+        return resposta(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "VALIDACAO",
+                "Os dados informados são inválidos.",
+                detalhes,
+                requisicao);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErroResposta> tratarTipoInvalido(
+            MethodArgumentTypeMismatchException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "VALIDACAO",
+                "Os dados informados são inválidos.",
+                List.of(new DetalheErro(excecao.getName(), "deve ser um número inteiro")),
+                requisicao);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
