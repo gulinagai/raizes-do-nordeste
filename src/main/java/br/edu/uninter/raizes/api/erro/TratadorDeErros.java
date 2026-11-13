@@ -4,7 +4,9 @@ import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
+import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
+import br.edu.uninter.raizes.domain.excecao.ReservaExcedidaException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import org.slf4j.Logger;
@@ -68,6 +70,30 @@ public class TratadorDeErros {
                 "ESTOQUE_INSUFICIENTE",
                 "Não há quantidade disponível suficiente.",
                 List.of(new DetalheErro("quantidade", "Disponível: " + excecao.getDisponivel())),
+                requisicao);
+    }
+
+    @ExceptionHandler(ReservaExcedidaException.class)
+    public ResponseEntity<ErroResposta> tratarReservaExcedida(
+            ReservaExcedidaException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "ESTOQUE_INSUFICIENTE",
+                "Não há quantidade suficiente para um ou mais itens.",
+                List.of(new DetalheErro(
+                        "itens[" + excecao.getIndice() + "].quantidade",
+                        "Disponível: " + excecao.getDisponivel())),
+                requisicao);
+    }
+
+    @ExceptionHandler(RecursoInativoException.class)
+    public ResponseEntity<ErroResposta> tratarRecursoInativo(
+            RecursoInativoException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "RECURSO_INATIVO",
+                "O recurso informado está inativo.",
+                List.of(new DetalheErro(excecao.getCampo(), "inativo")),
                 requisicao);
     }
 
