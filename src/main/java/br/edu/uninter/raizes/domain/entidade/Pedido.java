@@ -73,6 +73,10 @@ public class Pedido {
         this.valorTotal = valorTotal;
     }
 
+    public void definirStatus(StatusPedido status) {
+        this.status = status;
+    }
+
     public Long getId() {
         return id;
     }
