@@ -9,6 +9,9 @@ import br.edu.uninter.raizes.domain.entidade.Unidade;
 import br.edu.uninter.raizes.domain.entidade.Usuario;
 import br.edu.uninter.raizes.domain.enumeracao.CanalPedido;
 import br.edu.uninter.raizes.domain.enumeracao.Perfil;
+import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
+import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
+import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException.Campo;
 import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
 import br.edu.uninter.raizes.domain.excecao.ReservaExcedidaException;
@@ -22,14 +25,20 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PedidoServico {
+
+    private static final int LIMITE_MAXIMO = 50;
 
     private final UnidadeRepositorio unidades;
     private final UsuarioRepositorio usuarios;
@@ -75,6 +84,33 @@ public class PedidoServico {
         return resultado(salvo);
     }
 
+    @Transactional(readOnly = true)
+    public ResultadoListaPedidos listar(
+            Long usuarioId, Perfil perfil, String canalPedido, String status, int pagina, int limite) {
+        List<Campo> campos = new ArrayList<>();
+        if (pagina < 1) {
+            campos.add(new Campo("page", "deve ser maior ou igual a 1"));
+        }
+        if (limite < 1 || limite > LIMITE_MAXIMO) {
+            campos.add(new Campo("limit", "deve estar entre 1 e 50"));
+        }
+        CanalPedido canal = enumOuNulo(canalPedido, CanalPedido.class, "canalPedido", campos);
+        StatusPedido situacao = enumOuNulo(status, StatusPedido.class, "status", campos);
+        if (!campos.isEmpty()) {
+            throw new ParametrosInvalidosException(campos);
+        }
+
+        Long clienteId = perfil == Perfil.CLIENTE ? usuarioId : null;
+        Page<Pedido> consulta = pedidos.listar(
+                clienteId,
+                canal,
+                situacao,
+                PageRequest.of(pagina - 1, limite, Sort.by(Sort.Order.desc("dataCriacao"), Sort.Order.desc("id"))));
+        List<ResultadoPedido> itens = carregar(consulta.getContent()).stream().map(this::resultado).toList();
+        return new ResultadoListaPedidos(
+                itens, pagina, limite, consulta.getTotalElements(), consulta.getTotalPages());
+    }
+
     private List<Reserva> reservar(Unidade unidade, List<ItemSolicitado> itens) {
         List<Reserva> reservas = new ArrayList<>();
         Map<Long, Integer> acumulado = new HashMap<>();
@@ -94,6 +130,30 @@ public class PedidoServico {
             reservas.add(new Reserva(encontrado.get(), produto, solicitado.quantidade()));
         }
         return reservas;
+    }
+
+    private <T extends Enum<T>> T enumOuNulo(String valor, Class<T> tipo, String campo, List<Campo> campos) {
+        if (valor == null || valor.isBlank()) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(tipo, valor.trim());
+        } catch (IllegalArgumentException excecao) {
+            campos.add(new Campo(campo, "valor inválido"));
+            return null;
+        }
+    }
+
+    private List<Pedido> carregar(List<Pedido> pagina) {
+        if (pagina.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = pagina.stream().map(Pedido::getId).toList();
+        Map<Long, Pedido> porId = new LinkedHashMap<>();
+        for (Pedido pedido : pedidos.buscarComItens(ids)) {
+            porId.putIfAbsent(pedido.getId(), pedido);
+        }
+        return ids.stream().map(porId::get).toList();
     }
 
     private ResultadoPedido resultado(Pedido pedido) {
