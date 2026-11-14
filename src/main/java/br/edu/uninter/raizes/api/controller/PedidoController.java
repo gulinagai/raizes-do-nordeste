@@ -1,5 +1,6 @@
 package br.edu.uninter.raizes.api.controller;
 
+import br.edu.uninter.raizes.api.dto.AtualizacaoStatusRequisicao;
 import br.edu.uninter.raizes.api.dto.PedidoRequisicao;
 import br.edu.uninter.raizes.api.dto.PedidoResposta;
 import br.edu.uninter.raizes.api.dto.PedidosResposta;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +39,12 @@ public class PedidoController {
             @RequestParam(name = "limit", defaultValue = "10") int limit) {
         return PedidosResposta.de(pedidoServico.listar(
                 autenticado.id(), autenticado.perfil(), canalPedido, status, page, limit));
+    }
+
+    @PatchMapping("/{id}/status")
+    public PedidoResposta atualizarStatus(
+            @PathVariable Long id, @Valid @RequestBody AtualizacaoStatusRequisicao requisicao) {
+        return PedidoResposta.de(pedidoServico.atualizarStatus(id, requisicao.status()));
     }
 
     @PostMapping

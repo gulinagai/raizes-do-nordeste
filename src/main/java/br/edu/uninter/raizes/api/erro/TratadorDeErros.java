@@ -8,6 +8,7 @@ import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
+import br.edu.uninter.raizes.domain.excecao.TransicaoStatusNaoPermitidaException;
 import br.edu.uninter.raizes.domain.excecao.ReservaExcedidaException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -106,6 +107,17 @@ public class TratadorDeErros {
                 HttpStatus.SERVICE_UNAVAILABLE,
                 "GATEWAY_PAGAMENTO_INDISPONIVEL",
                 "O serviço de pagamento está indisponível.",
+                List.of(),
+                requisicao);
+    }
+
+    @ExceptionHandler(TransicaoStatusNaoPermitidaException.class)
+    public ResponseEntity<ErroResposta> tratarTransicaoNaoPermitida(
+            TransicaoStatusNaoPermitidaException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "TRANSICAO_NAO_PERMITIDA",
+                "A transição de status não é permitida.",
                 List.of(),
                 requisicao);
     }

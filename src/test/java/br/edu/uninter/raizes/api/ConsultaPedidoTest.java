@@ -119,7 +119,7 @@ class ConsultaPedidoTest {
         String token = token(CLIENTE);
 
         esperarValidacao(token, "LOJA", null, null, null, "canalPedido");
-        esperarValidacao(token, null, "ENTREGUE", null, null, "status");
+        esperarValidacao(token, null, "CANCELADO", null, null, "status");
         esperarValidacao(token, null, null, "0", null, "page");
         esperarValidacao(token, null, null, null, "51", "limit");
     }

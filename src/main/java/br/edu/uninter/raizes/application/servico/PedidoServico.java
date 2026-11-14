@@ -111,6 +111,13 @@ public class PedidoServico {
                 itens, pagina, limite, consulta.getTotalElements(), consulta.getTotalPages());
     }
 
+    @Transactional
+    public ResultadoPedido atualizarStatus(Long id, StatusPedido status) {
+        Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
+        pedido.avancarStatus(status);
+        return resultado(pedidos.saveAndFlush(pedido));
+    }
+
     private List<Reserva> reservar(Unidade unidade, List<ItemSolicitado> itens) {
         List<Reserva> reservas = new ArrayList<>();
         Map<Long, Integer> acumulado = new HashMap<>();

@@ -2,6 +2,7 @@ package br.edu.uninter.raizes.domain.entidade;
 
 import br.edu.uninter.raizes.domain.enumeracao.CanalPedido;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
+import br.edu.uninter.raizes.domain.excecao.TransicaoStatusNaoPermitidaException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -75,6 +76,18 @@ public class Pedido {
 
     public void definirStatus(StatusPedido status) {
         this.status = status;
+    }
+
+    public void avancarStatus(StatusPedido destino) {
+        if (status == StatusPedido.EM_PREPARO && destino == StatusPedido.PRONTO) {
+            this.status = StatusPedido.PRONTO;
+            return;
+        }
+        if (status == StatusPedido.PRONTO && destino == StatusPedido.ENTREGUE) {
+            this.status = StatusPedido.ENTREGUE;
+            return;
+        }
+        throw new TransicaoStatusNaoPermitidaException();
     }
 
     public Long getId() {
