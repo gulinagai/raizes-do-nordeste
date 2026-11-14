@@ -135,6 +135,64 @@ class CriacaoPedidoTest {
     }
 
     @Test
+    void somaItensRepetidosNaMesmaReserva() throws Exception {
+        Estoque estoque = estoqueDe(MATRIZ, BAIAO);
+        estoque.setQuantidadeReservada(5);
+        estoques.saveAndFlush(estoque);
+        long produtoId = estoque.getProduto().getId();
+
+        MvcResult resultado = postar(corpo(
+                estoque.getUnidade().getId(),
+                clienteId(),
+                "TOTEM",
+                item(produtoId, 10) + "," + item(produtoId, 6)));
+
+        assertEquals(201, resultado.getResponse().getStatus());
+        Estoque atualizado = estoques.findByUnidadeIdAndProdutoId(estoque.getUnidade().getId(), produtoId).orElseThrow();
+        assertEquals(40, atualizado.getQuantidadeTotal());
+        assertEquals(21, atualizado.getQuantidadeReservada());
+        assertEquals(19, atualizado.quantidadeDisponivel());
+    }
+
+    @Test
+    void rejeitaSomaDeItensRepetidosAcimaDoDisponivel() throws Exception {
+        Estoque estoque = estoqueDe(MATRIZ, BAIAO);
+        long antes = pedidos.count();
+
+        MvcResult resultado = postar(corpo(
+                estoque.getUnidade().getId(),
+                clienteId(),
+                "APP",
+                item(estoque.getProduto().getId(), 30) + "," + item(estoque.getProduto().getId(), 15)));
+
+        assertEquals(409, resultado.getResponse().getStatus());
+        String corpo = resultado.getResponse().getContentAsString();
+        assertEquals("itens[1].quantidade", JsonPath.read(corpo, "$.details[0].field"));
+        assertEquals("Disponível: 10", JsonPath.read(corpo, "$.details[0].issue"));
+        assertEquals(antes, pedidos.count());
+        assertEquals(40, estoque.getQuantidadeTotal());
+        assertEquals(0, estoque.getQuantidadeReservada());
+    }
+
+    @Test
+    void rejeitaProdutoSemEstoqueNaUnidade() throws Exception {
+        Produto semEstoque = produtos.saveAndFlush(
+                new Produto("Produto Sem Saldo Pedido", "Sem registro na unidade.", new BigDecimal("9.00"), true));
+        Estoque baiao = estoqueDe(MATRIZ, BAIAO);
+        long antes = pedidos.count();
+
+        MvcResult resultado = postar(corpo(baiao.getUnidade().getId(), clienteId(), "WEB", item(semEstoque.getId(), 1)));
+
+        assertEquals(409, resultado.getResponse().getStatus());
+        String corpo = resultado.getResponse().getContentAsString();
+        assertEquals("ESTOQUE_INSUFICIENTE", JsonPath.read(corpo, "$.error"));
+        assertEquals("Disponível: 0", JsonPath.read(corpo, "$.details[0].issue"));
+        assertEquals(antes, pedidos.count());
+        assertEquals(0, baiao.getQuantidadeReservada());
+        assertEquals(18, estoqueDe(FILIAL, BAIAO).getQuantidadeTotal());
+    }
+
+    @Test
     void rejeitaQuantidadeInvalida() throws Exception {
         Estoque estoque = estoqueDe(MATRIZ, BAIAO);
         long antes = pedidos.count();
