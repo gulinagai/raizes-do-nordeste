@@ -2,10 +2,13 @@ package br.edu.uninter.raizes.api.erro;
 
 import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
+import br.edu.uninter.raizes.domain.excecao.GatewayPagamentoIndisponivelException;
+import br.edu.uninter.raizes.domain.excecao.PagamentoNaoPermitidoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
+import br.edu.uninter.raizes.domain.excecao.TransicaoStatusNaoPermitidaException;
 import br.edu.uninter.raizes.domain.excecao.ReservaExcedidaException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -94,6 +97,39 @@ public class TratadorDeErros {
                 "RECURSO_INATIVO",
                 "O recurso informado está inativo.",
                 List.of(new DetalheErro(excecao.getCampo(), "inativo")),
+                requisicao);
+    }
+
+    @ExceptionHandler(GatewayPagamentoIndisponivelException.class)
+    public ResponseEntity<ErroResposta> tratarGatewayIndisponivel(
+            GatewayPagamentoIndisponivelException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "GATEWAY_PAGAMENTO_INDISPONIVEL",
+                "O serviço de pagamento está indisponível.",
+                List.of(),
+                requisicao);
+    }
+
+    @ExceptionHandler(TransicaoStatusNaoPermitidaException.class)
+    public ResponseEntity<ErroResposta> tratarTransicaoNaoPermitida(
+            TransicaoStatusNaoPermitidaException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "TRANSICAO_NAO_PERMITIDA",
+                "A transição de status não é permitida.",
+                List.of(),
+                requisicao);
+    }
+
+    @ExceptionHandler(PagamentoNaoPermitidoException.class)
+    public ResponseEntity<ErroResposta> tratarPagamentoNaoPermitido(
+            PagamentoNaoPermitidoException excecao, HttpServletRequest requisicao) {
+        return resposta(
+                HttpStatus.CONFLICT,
+                "PAGAMENTO_NAO_PERMITIDO",
+                "O pedido não está aguardando pagamento.",
+                List.of(),
                 requisicao);
     }
 
