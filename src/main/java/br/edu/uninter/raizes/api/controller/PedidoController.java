@@ -41,6 +41,11 @@ public class PedidoController {
                 autenticado.id(), autenticado.perfil(), canalPedido, status, page, limit));
     }
 
+    @PatchMapping("/{id}/cancelamento")
+    public PedidoResposta cancelar(@PathVariable Long id) {
+        return PedidoResposta.de(pedidoServico.cancelar(id));
+    }
+
     @PatchMapping("/{id}/status")
     public PedidoResposta atualizarStatus(
             @PathVariable Long id, @Valid @RequestBody AtualizacaoStatusRequisicao requisicao) {

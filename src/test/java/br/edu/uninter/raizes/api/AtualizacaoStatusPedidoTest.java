@@ -122,7 +122,7 @@ class AtualizacaoStatusPedidoTest {
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"status":"CANCELADO"}
+                                {"status":"DEVOLVIDO"}
                                 """))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.error").value("VALIDACAO"));

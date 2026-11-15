@@ -90,6 +90,15 @@ public class Pedido {
         throw new TransicaoStatusNaoPermitidaException();
     }
 
+    public void cancelar() {
+        if (status != StatusPedido.AGUARDANDO_PAGAMENTO
+                && status != StatusPedido.EM_PREPARO
+                && status != StatusPedido.PRONTO) {
+            throw new TransicaoStatusNaoPermitidaException();
+        }
+        this.status = StatusPedido.CANCELADO;
+    }
+
     public Long getId() {
         return id;
     }

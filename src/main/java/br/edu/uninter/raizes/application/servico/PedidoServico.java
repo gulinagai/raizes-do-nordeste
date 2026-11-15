@@ -10,6 +10,8 @@ import br.edu.uninter.raizes.domain.entidade.Usuario;
 import br.edu.uninter.raizes.domain.enumeracao.CanalPedido;
 import br.edu.uninter.raizes.domain.enumeracao.Perfil;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
+import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
+import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException.Campo;
 import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
@@ -45,18 +47,21 @@ public class PedidoServico {
     private final ProdutoRepositorio produtos;
     private final EstoqueRepositorio estoques;
     private final PedidoRepositorio pedidos;
+    private final MovimentacaoEstoqueServico movimentacoes;
 
     public PedidoServico(
             UnidadeRepositorio unidades,
             UsuarioRepositorio usuarios,
             ProdutoRepositorio produtos,
             EstoqueRepositorio estoques,
-            PedidoRepositorio pedidos) {
+            PedidoRepositorio pedidos,
+            MovimentacaoEstoqueServico movimentacoes) {
         this.unidades = unidades;
         this.usuarios = usuarios;
         this.produtos = produtos;
         this.estoques = estoques;
         this.pedidos = pedidos;
+        this.movimentacoes = movimentacoes;
     }
 
     @Transactional
@@ -116,6 +121,44 @@ public class PedidoServico {
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
         pedido.avancarStatus(status);
         return resultado(pedidos.saveAndFlush(pedido));
+    }
+
+    @Transactional
+    public ResultadoPedido cancelar(Long id) {
+        Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
+        if (pedido.getStatus() == StatusPedido.AGUARDANDO_PAGAMENTO) {
+            liberarReserva(pedido);
+        } else if (pedido.getStatus() == StatusPedido.EM_PREPARO || pedido.getStatus() == StatusPedido.PRONTO) {
+            devolverEstoque(pedido);
+        }
+        pedido.cancelar();
+        return resultado(pedidos.saveAndFlush(pedido));
+    }
+
+    private void liberarReserva(Pedido pedido) {
+        for (Map.Entry<Long, Integer> item : quantidades(pedido).entrySet()) {
+            Estoque estoque = estoques.findByUnidadeIdAndProdutoId(pedido.getUnidade().getId(), item.getKey())
+                    .orElseThrow(() -> new EstoqueInsuficienteException(0));
+            if (estoque.getQuantidadeReservada() < item.getValue()) {
+                throw new EstoqueInsuficienteException(estoque.getQuantidadeReservada());
+            }
+            estoque.setQuantidadeReservada(estoque.getQuantidadeReservada() - item.getValue());
+        }
+    }
+
+    private void devolverEstoque(Pedido pedido) {
+        Long unidadeId = pedido.getUnidade().getId();
+        for (Map.Entry<Long, Integer> item : quantidades(pedido).entrySet()) {
+            movimentacoes.registrar(unidadeId, item.getKey(), TipoMovimentacaoEstoque.ENTRADA, item.getValue(), null);
+        }
+    }
+
+    private Map<Long, Integer> quantidades(Pedido pedido) {
+        Map<Long, Integer> quantidades = new LinkedHashMap<>();
+        for (ItemPedido item : pedido.getItens()) {
+            quantidades.merge(item.getProduto().getId(), item.getQuantidade(), Integer::sum);
+        }
+        return quantidades;
     }
 
     private List<Reserva> reservar(Unidade unidade, List<ItemSolicitado> itens) {
