@@ -1,5 +1,6 @@
 package br.edu.uninter.raizes.api.erro;
 
+import br.edu.uninter.raizes.domain.excecao.AcessoNegadoException;
 import br.edu.uninter.raizes.domain.excecao.CredenciaisInvalidasException;
 import br.edu.uninter.raizes.domain.excecao.EmailJaCadastradoException;
 import br.edu.uninter.raizes.domain.excecao.GatewayPagamentoIndisponivelException;
@@ -131,6 +132,12 @@ public class TratadorDeErros {
                 "O pedido não está aguardando pagamento.",
                 List.of(),
                 requisicao);
+    }
+
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<ErroResposta> tratarAcessoNegado(
+            AcessoNegadoException excecao, HttpServletRequest requisicao) {
+        return resposta(HttpStatus.FORBIDDEN, "ACESSO_NEGADO", "Acesso negado.", List.of(), requisicao);
     }
 
     @ExceptionHandler(CredenciaisInvalidasException.class)

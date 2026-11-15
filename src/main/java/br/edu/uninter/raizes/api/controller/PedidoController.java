@@ -42,19 +42,24 @@ public class PedidoController {
     }
 
     @PatchMapping("/{id}/cancelamento")
-    public PedidoResposta cancelar(@PathVariable Long id) {
-        return PedidoResposta.de(pedidoServico.cancelar(id));
+    public PedidoResposta cancelar(@PathVariable Long id, @AuthenticationPrincipal UsuarioAutenticado autenticado) {
+        return PedidoResposta.de(pedidoServico.cancelar(id, autenticado.id(), autenticado.perfil()));
     }
 
     @PatchMapping("/{id}/status")
     public PedidoResposta atualizarStatus(
-            @PathVariable Long id, @Valid @RequestBody AtualizacaoStatusRequisicao requisicao) {
-        return PedidoResposta.de(pedidoServico.atualizarStatus(id, requisicao.status()));
+            @PathVariable Long id,
+            @AuthenticationPrincipal UsuarioAutenticado autenticado,
+            @Valid @RequestBody AtualizacaoStatusRequisicao requisicao) {
+        return PedidoResposta.de(pedidoServico.atualizarStatus(id, requisicao.status(), autenticado.perfil()));
     }
 
     @PostMapping
-    public ResponseEntity<PedidoResposta> criar(@Valid @RequestBody PedidoRequisicao requisicao) {
+    public ResponseEntity<PedidoResposta> criar(
+            @AuthenticationPrincipal UsuarioAutenticado autenticado, @Valid @RequestBody PedidoRequisicao requisicao) {
         return ResponseEntity.status(HttpStatus.CREATED).body(PedidoResposta.de(pedidoServico.criar(
+                autenticado.id(),
+                autenticado.perfil(),
                 requisicao.unidadeId(),
                 requisicao.clienteId(),
                 requisicao.canalPedido(),

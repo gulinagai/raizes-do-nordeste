@@ -11,6 +11,7 @@ import br.edu.uninter.raizes.domain.enumeracao.CanalPedido;
 import br.edu.uninter.raizes.domain.enumeracao.Perfil;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
 import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
+import br.edu.uninter.raizes.domain.excecao.AcessoNegadoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException.Campo;
@@ -65,7 +66,11 @@ public class PedidoServico {
     }
 
     @Transactional
-    public ResultadoPedido criar(Long unidadeId, Long clienteId, CanalPedido canalPedido, List<ItemSolicitado> itens) {
+    public ResultadoPedido criar(
+            Long usuarioId, Perfil perfil, Long unidadeId, Long clienteId, CanalPedido canalPedido, List<ItemSolicitado> itens) {
+        if (perfil == Perfil.CLIENTE && !usuarioId.equals(clienteId)) {
+            throw new AcessoNegadoException();
+        }
         Unidade unidade = unidades.findById(unidadeId).orElseThrow(RecursoNaoEncontradoException::new);
         if (!unidade.isAtivo()) {
             throw new RecursoInativoException("unidadeId");
@@ -117,15 +122,20 @@ public class PedidoServico {
     }
 
     @Transactional
-    public ResultadoPedido atualizarStatus(Long id, StatusPedido status) {
+    public ResultadoPedido atualizarStatus(Long id, StatusPedido status, Perfil perfil) {
+        if ((perfil == Perfil.COZINHA && status != StatusPedido.PRONTO)
+                || (perfil == Perfil.ATENDENTE && status != StatusPedido.ENTREGUE)) {
+            throw new AcessoNegadoException();
+        }
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
         pedido.avancarStatus(status);
         return resultado(pedidos.saveAndFlush(pedido));
     }
 
     @Transactional
-    public ResultadoPedido cancelar(Long id) {
+    public ResultadoPedido cancelar(Long id, Long usuarioId, Perfil perfil) {
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
+        exigirDono(pedido, usuarioId, perfil);
         if (pedido.getStatus() == StatusPedido.AGUARDANDO_PAGAMENTO) {
             liberarReserva(pedido);
         } else if (pedido.getStatus() == StatusPedido.EM_PREPARO || pedido.getStatus() == StatusPedido.PRONTO) {
@@ -133,6 +143,12 @@ public class PedidoServico {
         }
         pedido.cancelar();
         return resultado(pedidos.saveAndFlush(pedido));
+    }
+
+    private void exigirDono(Pedido pedido, Long usuarioId, Perfil perfil) {
+        if (perfil == Perfil.CLIENTE && !pedido.getCliente().getId().equals(usuarioId)) {
+            throw new AcessoNegadoException();
+        }
     }
 
     private void liberarReserva(Pedido pedido) {

@@ -43,7 +43,7 @@ CREATE TABLE estoque (
 
 CREATE INDEX idx_estoque_produto ON estoque (produto_id);
 
--- CHECK nao consulta outra linha. A funcao garante que a filial aponta para a unidade do tipo MATRIZ.
+
 CREATE FUNCTION validar_vinculo_unidade()
 RETURNS TRIGGER
 LANGUAGE plpgsql

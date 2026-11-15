@@ -10,6 +10,7 @@ import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -42,6 +43,7 @@ class EstoquePersistenciaTest {
         assertThrows(DataIntegrityViolationException.class,
                 () -> estoques.saveAndFlush(new Estoque(matriz, produto, 2, 0)));
     }
+
 
     @Test
     void rejeitaQuantidadeTotalNegativa() {

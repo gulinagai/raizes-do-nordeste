@@ -196,8 +196,9 @@ class CancelamentoPedidoTest {
     }
 
     private MvcResult atualizar(long pedidoId, String statusPedido) throws Exception {
+        String email = "PRONTO".equals(statusPedido) ? "cozinha@raizes.test" : "atendente@raizes.test";
         return mockMvc.perform(patch("/pedidos/{id}/status", pedidoId)
-                        .header("Authorization", "Bearer " + token())
+                        .header("Authorization", "Bearer " + token(email))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"status":"%s"}
@@ -212,11 +213,15 @@ class CancelamentoPedidoTest {
     }
 
     private String token() throws Exception {
+        return token(EMAIL);
+    }
+
+    private String token(String email) throws Exception {
         MvcResult login = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"email":"%s","senha":"%s"}
-                                """.formatted(EMAIL, SENHA)))
+                                """.formatted(email, SENHA)))
                 .andExpect(status().isOk())
                 .andReturn();
         return JsonPath.read(login.getResponse().getContentAsString(), "$.accessToken");

@@ -144,7 +144,7 @@ class ConsultaPedidoTest {
     void clienteNaoVePedidoDeOutroCliente() throws Exception {
         long outroId = cadastrarCliente("outro.pedido@raizes.test");
         long meuPedido = criar(CLIENTE, "APP");
-        long pedidoAlheio = criarPara(CLIENTE, outroId, "APP");
+        long pedidoAlheio = criarPara(ATENDENTE, outroId, "APP");
 
         String doCliente = listar(token(CLIENTE), null, null, null, null);
         String doAtendente = listar(token(ATENDENTE), null, null, null, null);

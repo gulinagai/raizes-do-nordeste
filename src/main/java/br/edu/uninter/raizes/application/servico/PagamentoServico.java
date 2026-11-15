@@ -5,10 +5,12 @@ import br.edu.uninter.raizes.domain.entidade.ItemPedido;
 import br.edu.uninter.raizes.domain.entidade.MovimentacaoEstoque;
 import br.edu.uninter.raizes.domain.entidade.Pagamento;
 import br.edu.uninter.raizes.domain.entidade.Pedido;
+import br.edu.uninter.raizes.domain.enumeracao.Perfil;
 import br.edu.uninter.raizes.domain.enumeracao.ResultadoSimulado;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPagamento;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
 import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
+import br.edu.uninter.raizes.domain.excecao.AcessoNegadoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.PagamentoNaoPermitidoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
@@ -46,8 +48,12 @@ public class PagamentoServico {
     }
 
     @Transactional
-    public ResultadoPagamento solicitar(Long pedidoId, ResultadoSimulado resultadoSimulado) {
+    public ResultadoPagamento solicitar(
+            Long pedidoId, ResultadoSimulado resultadoSimulado, Long usuarioId, Perfil perfil) {
         Pedido pedido = pedidos.findById(pedidoId).orElseThrow(RecursoNaoEncontradoException::new);
+        if (perfil == Perfil.CLIENTE && !pedido.getCliente().getId().equals(usuarioId)) {
+            throw new AcessoNegadoException();
+        }
         if (pedido.getStatus() != StatusPedido.AGUARDANDO_PAGAMENTO) {
             throw new PagamentoNaoPermitidoException();
         }

@@ -268,7 +268,7 @@ class ConsultaCardapioTest {
         estoques.saveAndFlush(new Estoque(filial, produto, 9, 0));
 
         mockMvc.perform(post("/estoque/movimentacoes")
-                        .header("Authorization", "Bearer " + token())
+                        .header("Authorization", "Bearer " + token("gerente@raizes.test"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"unidadeId":%d,"produtoId":%d,"tipo":"SAIDA","quantidade":3}
@@ -318,11 +318,15 @@ class ConsultaCardapioTest {
     }
 
     private String token() throws Exception {
+        return token(EMAIL);
+    }
+
+    private String token(String email) throws Exception {
         MvcResult login = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"email":"%s","senha":"%s"}
-                                """.formatted(EMAIL, SENHA)))
+                                """.formatted(email, SENHA)))
                 .andExpect(status().isOk())
                 .andReturn();
         return JsonPath.read(login.getResponse().getContentAsString(), "$.accessToken");
