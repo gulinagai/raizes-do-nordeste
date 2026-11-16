@@ -1,0 +1,13 @@
+package br.edu.uninter.raizes.domain.enumeracao;
+
+public enum AcaoAuditoria {
+    CRIAR_PEDIDO,
+    CANCELAR_PEDIDO,
+    ATUALIZAR_STATUS_PEDIDO,
+    PROCESSAR_PAGAMENTO,
+    MOVIMENTAR_ESTOQUE,
+    CONSULTAR_PEDIDOS,
+    CONSULTAR_USUARIO,
+    CADASTRAR_USUARIO,
+    AUTENTICAR
+}
