@@ -14,6 +14,7 @@ public class ParametrosInvalidosException extends RuntimeException {
         return campos;
     }
 
+
     public record Campo(String nome, String mensagem) {
     }
 }

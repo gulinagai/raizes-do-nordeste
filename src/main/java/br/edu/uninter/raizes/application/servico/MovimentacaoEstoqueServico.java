@@ -4,6 +4,7 @@ import br.edu.uninter.raizes.domain.entidade.Estoque;
 import br.edu.uninter.raizes.domain.entidade.MovimentacaoEstoque;
 import br.edu.uninter.raizes.domain.entidade.Produto;
 import br.edu.uninter.raizes.domain.entidade.Unidade;
+import br.edu.uninter.raizes.domain.enumeracao.AcaoAuditoria;
 import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
@@ -23,21 +24,29 @@ public class MovimentacaoEstoqueServico {
     private final ProdutoRepositorio produtos;
     private final EstoqueRepositorio estoques;
     private final MovimentacaoEstoqueRepositorio movimentacoes;
+    private final AuditoriaServico auditoria;
 
     public MovimentacaoEstoqueServico(
             UnidadeRepositorio unidades,
             ProdutoRepositorio produtos,
             EstoqueRepositorio estoques,
-            MovimentacaoEstoqueRepositorio movimentacoes) {
+            MovimentacaoEstoqueRepositorio movimentacoes,
+            AuditoriaServico auditoria) {
         this.unidades = unidades;
         this.produtos = produtos;
         this.estoques = estoques;
         this.movimentacoes = movimentacoes;
+        this.auditoria = auditoria;
     }
 
     @Transactional
     public ResultadoMovimentacao registrar(
-            Long unidadeId, Long produtoId, TipoMovimentacaoEstoque tipo, int quantidade, String observacao) {
+            Long unidadeId,
+            Long produtoId,
+            TipoMovimentacaoEstoque tipo,
+            int quantidade,
+            String observacao,
+            Long usuarioId) {
         Unidade unidade = unidades.findById(unidadeId).orElseThrow(RecursoNaoEncontradoException::new);
         Produto produto = produtos.findById(produtoId).orElseThrow(RecursoNaoEncontradoException::new);
         Optional<Estoque> existente = estoques.findByUnidadeIdAndProdutoId(unidadeId, produtoId);
@@ -49,6 +58,7 @@ public class MovimentacaoEstoqueServico {
             Estoque salvo = estoques.saveAndFlush(estoque);
             MovimentacaoEstoque movimentacao = movimentacoes.saveAndFlush(
                     new MovimentacaoEstoque(salvo, tipo, quantidade, normalizar(observacao)));
+            auditoria.registrar(usuarioId, AcaoAuditoria.MOVIMENTAR_ESTOQUE, "estoque", salvo.getId(), tipo.name());
             return new ResultadoMovimentacao(
                     movimentacao.getId(),
                     salvo.getUnidade().getId(),

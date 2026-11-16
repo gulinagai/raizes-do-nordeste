@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class MovimentacaoEstoqueTest {
 
-    private static final String EMAIL = "cliente@raizes.test";
+    private static final String EMAIL = "gerente@raizes.test";
     private static final String SENHA = "Raizes@2026";
     private static final String MATRIZ = "Raízes Matriz Recife";
     private static final String FILIAL = "Raízes Filial Olinda";

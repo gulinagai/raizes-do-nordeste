@@ -7,10 +7,12 @@ import br.edu.uninter.raizes.domain.entidade.Pedido;
 import br.edu.uninter.raizes.domain.entidade.Produto;
 import br.edu.uninter.raizes.domain.entidade.Unidade;
 import br.edu.uninter.raizes.domain.entidade.Usuario;
+import br.edu.uninter.raizes.domain.enumeracao.AcaoAuditoria;
 import br.edu.uninter.raizes.domain.enumeracao.CanalPedido;
 import br.edu.uninter.raizes.domain.enumeracao.Perfil;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
 import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
+import br.edu.uninter.raizes.domain.excecao.AcessoNegadoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException.Campo;
@@ -48,6 +50,7 @@ public class PedidoServico {
     private final EstoqueRepositorio estoques;
     private final PedidoRepositorio pedidos;
     private final MovimentacaoEstoqueServico movimentacoes;
+    private final AuditoriaServico auditoria;
 
     public PedidoServico(
             UnidadeRepositorio unidades,
@@ -55,17 +58,23 @@ public class PedidoServico {
             ProdutoRepositorio produtos,
             EstoqueRepositorio estoques,
             PedidoRepositorio pedidos,
-            MovimentacaoEstoqueServico movimentacoes) {
+            MovimentacaoEstoqueServico movimentacoes,
+            AuditoriaServico auditoria) {
         this.unidades = unidades;
         this.usuarios = usuarios;
         this.produtos = produtos;
         this.estoques = estoques;
         this.pedidos = pedidos;
         this.movimentacoes = movimentacoes;
+        this.auditoria = auditoria;
     }
 
     @Transactional
-    public ResultadoPedido criar(Long unidadeId, Long clienteId, CanalPedido canalPedido, List<ItemSolicitado> itens) {
+    public ResultadoPedido criar(
+            Long usuarioId, Perfil perfil, Long unidadeId, Long clienteId, CanalPedido canalPedido, List<ItemSolicitado> itens) {
+        if (perfil == Perfil.CLIENTE && !usuarioId.equals(clienteId)) {
+            throw new AcessoNegadoException();
+        }
         Unidade unidade = unidades.findById(unidadeId).orElseThrow(RecursoNaoEncontradoException::new);
         if (!unidade.isAtivo()) {
             throw new RecursoInativoException("unidadeId");
@@ -86,6 +95,7 @@ public class PedidoServico {
         }
         pedido.definirValorTotal(total);
         Pedido salvo = pedidos.saveAndFlush(pedido);
+        auditoria.registrar(usuarioId, AcaoAuditoria.CRIAR_PEDIDO, "pedido", salvo.getId(), "CRIADO");
         return resultado(salvo);
     }
 
@@ -117,22 +127,37 @@ public class PedidoServico {
     }
 
     @Transactional
-    public ResultadoPedido atualizarStatus(Long id, StatusPedido status) {
+    public ResultadoPedido atualizarStatus(Long id, StatusPedido status, Long usuarioId, Perfil perfil) {
+        if ((perfil == Perfil.COZINHA && status != StatusPedido.PRONTO)
+                || (perfil == Perfil.ATENDENTE && status != StatusPedido.ENTREGUE)) {
+            throw new AcessoNegadoException();
+        }
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
         pedido.avancarStatus(status);
-        return resultado(pedidos.saveAndFlush(pedido));
+        ResultadoPedido resultado = resultado(pedidos.saveAndFlush(pedido));
+        auditoria.registrar(usuarioId, AcaoAuditoria.ATUALIZAR_STATUS_PEDIDO, "pedido", pedido.getId(), status.name());
+        return resultado;
     }
 
     @Transactional
-    public ResultadoPedido cancelar(Long id) {
+    public ResultadoPedido cancelar(Long id, Long usuarioId, Perfil perfil) {
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
+        exigirDono(pedido, usuarioId, perfil);
         if (pedido.getStatus() == StatusPedido.AGUARDANDO_PAGAMENTO) {
             liberarReserva(pedido);
         } else if (pedido.getStatus() == StatusPedido.EM_PREPARO || pedido.getStatus() == StatusPedido.PRONTO) {
-            devolverEstoque(pedido);
+            devolverEstoque(pedido, usuarioId);
         }
         pedido.cancelar();
-        return resultado(pedidos.saveAndFlush(pedido));
+        ResultadoPedido resultado = resultado(pedidos.saveAndFlush(pedido));
+        auditoria.registrar(usuarioId, AcaoAuditoria.CANCELAR_PEDIDO, "pedido", pedido.getId(), "CANCELADO");
+        return resultado;
+    }
+
+    private void exigirDono(Pedido pedido, Long usuarioId, Perfil perfil) {
+        if (perfil == Perfil.CLIENTE && !pedido.getCliente().getId().equals(usuarioId)) {
+            throw new AcessoNegadoException();
+        }
     }
 
     private void liberarReserva(Pedido pedido) {
@@ -146,10 +171,11 @@ public class PedidoServico {
         }
     }
 
-    private void devolverEstoque(Pedido pedido) {
+    private void devolverEstoque(Pedido pedido, Long usuarioId) {
         Long unidadeId = pedido.getUnidade().getId();
         for (Map.Entry<Long, Integer> item : quantidades(pedido).entrySet()) {
-            movimentacoes.registrar(unidadeId, item.getKey(), TipoMovimentacaoEstoque.ENTRADA, item.getValue(), null);
+            movimentacoes.registrar(
+                    unidadeId, item.getKey(), TipoMovimentacaoEstoque.ENTRADA, item.getValue(), null, usuarioId);
         }
     }
 

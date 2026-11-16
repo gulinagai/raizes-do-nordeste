@@ -216,9 +216,9 @@ class CriacaoPedidoTest {
         long clienteId = clienteId();
         long antes = pedidos.count();
 
-        esperarNaoEncontrado(corpo(999_999_999L, clienteId, "PICKUP", item(estoque.getProduto().getId(), 1)));
-        esperarNaoEncontrado(corpo(estoque.getUnidade().getId(), 999_999_999L, "PICKUP", item(estoque.getProduto().getId(), 1)));
-        esperarNaoEncontrado(corpo(estoque.getUnidade().getId(), clienteId, "PICKUP", item(999_999_999L, 1)));
+        esperarNaoEncontrado(corpo(999_999_999L, clienteId, "PICKUP", item(estoque.getProduto().getId(), 1)), token());
+        esperarNaoEncontrado(corpo(estoque.getUnidade().getId(), 999_999_999L, "PICKUP", item(estoque.getProduto().getId(), 1)), token("atendente@raizes.test"));
+        esperarNaoEncontrado(corpo(estoque.getUnidade().getId(), clienteId, "PICKUP", item(999_999_999L, 1)), token());
 
         assertEquals(antes, pedidos.count());
         assertEquals(0, estoque.getQuantidadeReservada());
@@ -247,9 +247,9 @@ class CriacaoPedidoTest {
         assertEquals(0, estoqueDe(MATRIZ, BAIAO).getQuantidadeReservada());
     }
 
-    private void esperarNaoEncontrado(String json) throws Exception {
+    private void esperarNaoEncontrado(String json, String acesso) throws Exception {
         mockMvc.perform(post("/pedidos")
-                        .header("Authorization", "Bearer " + token())
+                        .header("Authorization", "Bearer " + acesso)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNotFound())
@@ -281,11 +281,15 @@ class CriacaoPedidoTest {
     }
 
     private String token() throws Exception {
+        return token(EMAIL);
+    }
+
+    private String token(String email) throws Exception {
         MvcResult login = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"email":"%s","senha":"%s"}
-                                """.formatted(EMAIL, SENHA)))
+                                """.formatted(email, SENHA)))
                 .andExpect(status().isOk())
                 .andReturn();
         return JsonPath.read(login.getResponse().getContentAsString(), "$.accessToken");

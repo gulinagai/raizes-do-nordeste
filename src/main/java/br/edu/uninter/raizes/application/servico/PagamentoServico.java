@@ -5,10 +5,13 @@ import br.edu.uninter.raizes.domain.entidade.ItemPedido;
 import br.edu.uninter.raizes.domain.entidade.MovimentacaoEstoque;
 import br.edu.uninter.raizes.domain.entidade.Pagamento;
 import br.edu.uninter.raizes.domain.entidade.Pedido;
+import br.edu.uninter.raizes.domain.enumeracao.AcaoAuditoria;
+import br.edu.uninter.raizes.domain.enumeracao.Perfil;
 import br.edu.uninter.raizes.domain.enumeracao.ResultadoSimulado;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPagamento;
 import br.edu.uninter.raizes.domain.enumeracao.StatusPedido;
 import br.edu.uninter.raizes.domain.enumeracao.TipoMovimentacaoEstoque;
+import br.edu.uninter.raizes.domain.excecao.AcessoNegadoException;
 import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.PagamentoNaoPermitidoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
@@ -31,34 +34,44 @@ public class PagamentoServico {
     private final MovimentacaoEstoqueRepositorio movimentacoes;
     private final PagamentoRepositorio pagamentos;
     private final SimuladorDePagamento simulador;
+    private final AuditoriaServico auditoria;
 
     public PagamentoServico(
             PedidoRepositorio pedidos,
             EstoqueRepositorio estoques,
             MovimentacaoEstoqueRepositorio movimentacoes,
             PagamentoRepositorio pagamentos,
-            SimuladorDePagamento simulador) {
+            SimuladorDePagamento simulador,
+            AuditoriaServico auditoria) {
         this.pedidos = pedidos;
         this.estoques = estoques;
         this.movimentacoes = movimentacoes;
         this.pagamentos = pagamentos;
         this.simulador = simulador;
+        this.auditoria = auditoria;
     }
 
     @Transactional
-    public ResultadoPagamento solicitar(Long pedidoId, ResultadoSimulado resultadoSimulado) {
+    public ResultadoPagamento solicitar(
+            Long pedidoId, ResultadoSimulado resultadoSimulado, Long usuarioId, Perfil perfil) {
         Pedido pedido = pedidos.findById(pedidoId).orElseThrow(RecursoNaoEncontradoException::new);
+        if (perfil == Perfil.CLIENTE && !pedido.getCliente().getId().equals(usuarioId)) {
+            throw new AcessoNegadoException();
+        }
         if (pedido.getStatus() != StatusPedido.AGUARDANDO_PAGAMENTO) {
             throw new PagamentoNaoPermitidoException();
         }
         RetornoSimulado retorno = simulador.simular(resultadoSimulado);
         if (retorno.gatewayIndisponivel()) {
+            auditoria.registrar(usuarioId, AcaoAuditoria.PROCESSAR_PAGAMENTO, "pedido", pedido.getId(), "INDISPONIVEL");
             return ResultadoPagamento.indisponivel();
         }
         boolean aprovado = retorno.status() == StatusPagamento.APROVADO;
         confirmarEstoque(pedido, aprovado);
         pedido.definirStatus(aprovado ? StatusPedido.EM_PREPARO : StatusPedido.PAGAMENTO_RECUSADO);
         Pagamento pagamento = pagamentos.saveAndFlush(new Pagamento(pedido, retorno.status(), pedido.getValorTotal()));
+        auditoria.registrar(
+                usuarioId, AcaoAuditoria.PROCESSAR_PAGAMENTO, "pedido", pedido.getId(), pagamento.getStatus().name());
         return new ResultadoPagamento(
                 false,
                 pagamento.getId(),

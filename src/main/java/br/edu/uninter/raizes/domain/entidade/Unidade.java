@@ -1,6 +1,7 @@
 package br.edu.uninter.raizes.domain.entidade;
 
 import br.edu.uninter.raizes.domain.enumeracao.TipoUnidade;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
