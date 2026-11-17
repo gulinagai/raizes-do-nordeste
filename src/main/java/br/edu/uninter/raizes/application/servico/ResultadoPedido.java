@@ -13,6 +13,8 @@ public record ResultadoPedido(
         CanalPedido canalPedido,
         StatusPedido status,
         BigDecimal total,
+        BigDecimal desconto,
+        int pontosResgatados,
         List<ItemDoPedido> itens,
         Instant dataCriacao) {
 }

@@ -51,6 +51,18 @@ public class Pedido {
     @Column(name = "valor_total", nullable = false, precision = 10, scale = 2)
     private BigDecimal valorTotal;
 
+    @Column(name = "pontos_resgatados", nullable = false)
+    private int pontosResgatados;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal desconto = BigDecimal.ZERO;
+
+    @Column(name = "pontos_creditados", nullable = false)
+    private boolean pontosCreditados;
+
+    @Column(name = "resgate_estornado", nullable = false)
+    private boolean resgateEstornado;
+
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<ItemPedido> itens = new ArrayList<>();
 
@@ -64,6 +76,7 @@ public class Pedido {
         this.status = StatusPedido.AGUARDANDO_PAGAMENTO;
         this.dataCriacao = dataCriacao;
         this.valorTotal = BigDecimal.ZERO;
+        this.desconto = BigDecimal.ZERO;
     }
 
     public void adicionarItem(ItemPedido item) {
@@ -99,6 +112,20 @@ public class Pedido {
         this.status = StatusPedido.CANCELADO;
     }
 
+    public void aplicarResgate(int pontos, BigDecimal desconto) {
+        this.pontosResgatados = pontos;
+        this.desconto = desconto;
+        this.valorTotal = this.valorTotal.subtract(desconto);
+    }
+
+    public void registrarCredito() {
+        this.pontosCreditados = true;
+    }
+
+    public void marcarResgateEstornado() {
+        this.resgateEstornado = true;
+    }
+
     public Long getId() {
         return id;
     }
@@ -125,6 +152,22 @@ public class Pedido {
 
     public BigDecimal getValorTotal() {
         return valorTotal;
+    }
+
+    public int getPontosResgatados() {
+        return pontosResgatados;
+    }
+
+    public BigDecimal getDesconto() {
+        return desconto;
+    }
+
+    public boolean isPontosCreditados() {
+        return pontosCreditados;
+    }
+
+    public boolean isResgateEstornado() {
+        return resgateEstornado;
     }
 
     public List<ItemPedido> getItens() {

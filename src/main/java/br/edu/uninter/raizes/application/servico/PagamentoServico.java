@@ -35,6 +35,7 @@ public class PagamentoServico {
     private final PagamentoRepositorio pagamentos;
     private final SimuladorDePagamento simulador;
     private final AuditoriaServico auditoria;
+    private final FidelidadeServico fidelidade;
 
     public PagamentoServico(
             PedidoRepositorio pedidos,
@@ -42,13 +43,15 @@ public class PagamentoServico {
             MovimentacaoEstoqueRepositorio movimentacoes,
             PagamentoRepositorio pagamentos,
             SimuladorDePagamento simulador,
-            AuditoriaServico auditoria) {
+            AuditoriaServico auditoria,
+            FidelidadeServico fidelidade) {
         this.pedidos = pedidos;
         this.estoques = estoques;
         this.movimentacoes = movimentacoes;
         this.pagamentos = pagamentos;
         this.simulador = simulador;
         this.auditoria = auditoria;
+        this.fidelidade = fidelidade;
     }
 
     @Transactional
@@ -68,6 +71,9 @@ public class PagamentoServico {
         }
         boolean aprovado = retorno.status() == StatusPagamento.APROVADO;
         confirmarEstoque(pedido, aprovado);
+        if (!aprovado) {
+            fidelidade.estornarResgate(pedido, usuarioId);
+        }
         pedido.definirStatus(aprovado ? StatusPedido.EM_PREPARO : StatusPedido.PAGAMENTO_RECUSADO);
         Pagamento pagamento = pagamentos.saveAndFlush(new Pagamento(pedido, retorno.status(), pedido.getValorTotal()));
         auditoria.registrar(
