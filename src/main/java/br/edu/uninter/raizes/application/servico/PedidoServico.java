@@ -51,6 +51,7 @@ public class PedidoServico {
     private final PedidoRepositorio pedidos;
     private final MovimentacaoEstoqueServico movimentacoes;
     private final AuditoriaServico auditoria;
+    private final FidelidadeServico fidelidade;
 
     public PedidoServico(
             UnidadeRepositorio unidades,
@@ -59,7 +60,8 @@ public class PedidoServico {
             EstoqueRepositorio estoques,
             PedidoRepositorio pedidos,
             MovimentacaoEstoqueServico movimentacoes,
-            AuditoriaServico auditoria) {
+            AuditoriaServico auditoria,
+            FidelidadeServico fidelidade) {
         this.unidades = unidades;
         this.usuarios = usuarios;
         this.produtos = produtos;
@@ -67,6 +69,7 @@ public class PedidoServico {
         this.pedidos = pedidos;
         this.movimentacoes = movimentacoes;
         this.auditoria = auditoria;
+        this.fidelidade = fidelidade;
     }
 
     @Transactional
@@ -134,6 +137,9 @@ public class PedidoServico {
         }
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
         pedido.avancarStatus(status);
+        if (pedido.getStatus() == StatusPedido.ENTREGUE) {
+            fidelidade.creditarEntrega(pedido, usuarioId);
+        }
         ResultadoPedido resultado = resultado(pedidos.saveAndFlush(pedido));
         auditoria.registrar(usuarioId, AcaoAuditoria.ATUALIZAR_STATUS_PEDIDO, "pedido", pedido.getId(), status.name());
         return resultado;
@@ -143,6 +149,7 @@ public class PedidoServico {
     public ResultadoPedido cancelar(Long id, Long usuarioId, Perfil perfil) {
         Pedido pedido = pedidos.findById(id).orElseThrow(RecursoNaoEncontradoException::new);
         exigirDono(pedido, usuarioId, perfil);
+        fidelidade.estornarResgate(pedido, usuarioId);
         if (pedido.getStatus() == StatusPedido.AGUARDANDO_PAGAMENTO) {
             liberarReserva(pedido);
         } else if (pedido.getStatus() == StatusPedido.EM_PREPARO || pedido.getStatus() == StatusPedido.PRONTO) {
@@ -243,6 +250,8 @@ public class PedidoServico {
                 pedido.getCanalPedido(),
                 pedido.getStatus(),
                 pedido.getValorTotal(),
+                pedido.getDesconto(),
+                pedido.getPontosResgatados(),
                 itens,
                 pedido.getDataCriacao());
     }

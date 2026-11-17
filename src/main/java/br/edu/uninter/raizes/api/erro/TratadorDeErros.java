@@ -9,6 +9,7 @@ import br.edu.uninter.raizes.domain.excecao.EstoqueInsuficienteException;
 import br.edu.uninter.raizes.domain.excecao.ParametrosInvalidosException;
 import br.edu.uninter.raizes.domain.excecao.RecursoInativoException;
 import br.edu.uninter.raizes.domain.excecao.RecursoNaoEncontradoException;
+import br.edu.uninter.raizes.domain.excecao.ResgateNaoPermitidoException;
 import br.edu.uninter.raizes.domain.excecao.TransicaoStatusNaoPermitidaException;
 import br.edu.uninter.raizes.domain.excecao.ReservaExcedidaException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -132,6 +133,12 @@ public class TratadorDeErros {
                 "O pedido não está aguardando pagamento.",
                 List.of(),
                 requisicao);
+    }
+
+    @ExceptionHandler(ResgateNaoPermitidoException.class)
+    public ResponseEntity<ErroResposta> tratarResgateNaoPermitido(
+            ResgateNaoPermitidoException excecao, HttpServletRequest requisicao) {
+        return resposta(HttpStatus.CONFLICT, "RESGATE_NAO_PERMITIDO", excecao.getMensagem(), List.of(), requisicao);
     }
 
     @ExceptionHandler(AcessoNegadoException.class)

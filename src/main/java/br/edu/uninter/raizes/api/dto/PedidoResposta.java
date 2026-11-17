@@ -14,6 +14,8 @@ public record PedidoResposta(
         CanalPedido canalPedido,
         StatusPedido status,
         BigDecimal total,
+        BigDecimal desconto,
+        int pontosResgatados,
         List<ItemPedidoResposta> itens,
         Instant dataCriacao) {
 
@@ -25,6 +27,8 @@ public record PedidoResposta(
                 resultado.canalPedido(),
                 resultado.status(),
                 resultado.total(),
+                resultado.desconto(),
+                resultado.pontosResgatados(),
                 resultado.itens().stream().map(ItemPedidoResposta::de).toList(),
                 resultado.dataCriacao());
     }

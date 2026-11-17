@@ -63,6 +63,27 @@ public class Fidelidade {
         return true;
     }
 
+    public void creditar(int pontos) {
+        if (!consentimento || pontos <= 0) {
+            throw new IllegalStateException();
+        }
+        this.saldo += pontos;
+    }
+
+    public void debitar(int pontos) {
+        if (!consentimento || pontos <= 0 || pontos > saldo) {
+            throw new IllegalStateException();
+        }
+        this.saldo -= pontos;
+    }
+
+    public void estornar(int pontos) {
+        if (pontos <= 0) {
+            throw new IllegalStateException();
+        }
+        this.saldo += pontos;
+    }
+
     public Long getId() {
         return id;
     }

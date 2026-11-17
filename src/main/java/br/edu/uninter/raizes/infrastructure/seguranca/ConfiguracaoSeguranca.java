@@ -59,7 +59,7 @@ public class ConfiguracaoSeguranca {
                                 .hasAnyRole("ADMIN", "GERENTE", "ATENDENTE", "CLIENTE")
                         .requestMatchers(HttpMethod.POST, "/pagamentos")
                                 .hasAnyRole("ADMIN", "GERENTE", "ATENDENTE", "CLIENTE")
-                        .requestMatchers("/fidelidade").hasRole("CLIENTE")
+                        .requestMatchers("/fidelidade", "/fidelidade/**").hasRole("CLIENTE")
                         .anyRequest().authenticated())
                 .addFilterBefore(filtroJwt, UsernamePasswordAuthenticationFilter.class)
                 .build();
