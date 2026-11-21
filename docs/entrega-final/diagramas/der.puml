@@ -1,0 +1,130 @@
+@startuml der
+skinparam shadowing false
+skinparam linetype ortho
+
+entity usuario {
+  * id : bigint <<PK>>
+  --
+  * nome : varchar(120)
+  * email : varchar(180) <<UK>>
+  * senha_hash : varchar(100)
+  * perfil : varchar(20)
+  * ativo : boolean
+}
+
+entity unidade {
+  * id : bigint <<PK>>
+  --
+  * nome : varchar(120)
+  * cidade : varchar(80)
+  * endereco : varchar(180)
+  * tipo : varchar(20)
+  unidade_matriz_id : bigint <<FK>>
+  * ativo : boolean
+}
+
+entity produto {
+  * id : bigint <<PK>>
+  --
+  * nome : varchar(120)
+  descricao : varchar(500)
+  * preco : numeric(10,2)
+  * ativo : boolean
+}
+
+entity estoque {
+  * id : bigint <<PK>>
+  --
+  * unidade_id : bigint <<FK>>
+  * produto_id : bigint <<FK>>
+  * quantidade_total : integer
+  * quantidade_reservada : integer
+}
+
+entity movimentacao_estoque {
+  * id : bigint <<PK>>
+  --
+  * estoque_id : bigint <<FK>>
+  * tipo : varchar(20)
+  * quantidade : integer
+  * data_hora : timestamptz
+  observacao : varchar(500)
+}
+
+entity pedido {
+  * id : bigint <<PK>>
+  --
+  * unidade_id : bigint <<FK>>
+  * cliente_id : bigint <<FK>>
+  * canal_pedido : varchar(20)
+  * status : varchar(30)
+  * data_criacao : timestamptz
+  * valor_total : numeric(10,2)
+  * pontos_resgatados : integer
+  * desconto : numeric(10,2)
+  * pontos_creditados : boolean
+  * resgate_estornado : boolean
+}
+
+entity item_pedido {
+  * id : bigint <<PK>>
+  --
+  * pedido_id : bigint <<FK>>
+  * produto_id : bigint <<FK>>
+  * quantidade : integer
+  * preco_unitario : numeric(10,2)
+}
+
+entity pagamento {
+  * id : bigint <<PK>>
+  --
+  * pedido_id : bigint <<FK, UK>>
+  * status : varchar(20)
+  * valor : numeric(10,2)
+  * data_hora : timestamptz
+}
+
+entity fidelidade {
+  * id : bigint <<PK>>
+  --
+  * usuario_id : bigint <<FK, UK>>
+  * consentimento : boolean
+  data_consentimento : timestamptz
+  data_revogacao : timestamptz
+  * saldo : integer
+}
+
+entity registro_auditoria {
+  * id : bigint <<PK>>
+  --
+  usuario_id : bigint <<FK>>
+  * acao : varchar(40)
+  * recurso : varchar(30)
+  recurso_id : bigint
+  resultado : varchar(30)
+  * data_hora : timestamptz
+}
+
+unidade |o--o{ unidade : "matriz de"
+usuario ||--o{ pedido : cliente
+unidade ||--o{ pedido
+produto ||--o{ item_pedido
+pedido ||--|{ item_pedido
+unidade ||--o{ estoque
+produto ||--o{ estoque
+estoque ||--o{ movimentacao_estoque
+pedido ||--o| pagamento
+usuario ||--o| fidelidade
+usuario |o--o{ registro_auditoria
+
+note bottom of estoque
+  UK (unidade_id, produto_id).
+  Disponível = quantidade_total - quantidade_reservada.
+  Reservado não passa do total.
+end note
+
+note bottom of pedido
+  Status final: AGUARDANDO_PAGAMENTO, EM_PREPARO,
+  PRONTO, ENTREGUE, CANCELADO, PAGAMENTO_RECUSADO.
+end note
+@enduml
