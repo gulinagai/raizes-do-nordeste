@@ -1,0 +1,70 @@
+@startuml casos-de-uso
+skinparam shadowing false
+left to right direction
+skinparam nodesep 12
+skinparam ranksep 40
+
+actor "Cliente\n(App/Web/Totem)" as cliente
+actor "Atendente\n(Balcão)" as atendente
+
+rectangle "Raízes do Nordeste" {
+  usecase "Cadastrar usuário" as cadastrar
+  usecase "Consultar fidelidade" as consultarFidelidade
+  usecase "Registrar fidelidade" as registrarFidelidade
+  usecase "Resgatar pontos" as resgatar
+  usecase "Criar pedido" as criar
+  usecase "Cancelar pedido" as cancelar
+  usecase "Solicitar pagamento" as pagar
+  usecase "Autenticar" as autenticar
+  usecase "Consultar cardápio" as cardapio
+  usecase "Listar pedidos" as listar
+  usecase "Avançar status" as status
+  usecase "Movimentar estoque" as estoque
+}
+
+actor Cozinha as cozinha
+actor "Gerente/Administrador" as gestor
+actor "Sistema externo\nde pagamento" as gateway
+
+cliente -[#2F6F4E]-> cadastrar
+cliente -[#2F6F4E]-> consultarFidelidade
+cliente -[#2F6F4E]-> registrarFidelidade
+cliente -[#2F6F4E]-> resgatar
+cliente -[#2F6F4E]-> criar
+cliente -[#2F6F4E]-> cancelar
+cliente -[#2F6F4E]-> pagar
+cliente -[#2F6F4E]-> autenticar
+cliente -[#2F6F4E]-> cardapio
+cliente -[#2F6F4E]-> listar
+
+atendente -[#1F4E79]-> criar
+atendente -[#1F4E79]-> cancelar
+atendente -[#1F4E79]-> pagar
+atendente -[#1F4E79]-> autenticar
+atendente -[#1F4E79]-> cardapio
+atendente -[#1F4E79]-> listar
+atendente -[#1F4E79]-> status
+
+cozinha -[#C47B2B]-> autenticar
+cozinha -[#C47B2B]-> cardapio
+cozinha -[#C47B2B]-> listar
+cozinha -[#C47B2B]-> status
+
+gestor -[#6B3FA0]-> criar
+gestor -[#6B3FA0]-> cancelar
+gestor -[#6B3FA0]-> pagar
+gestor -[#6B3FA0]-> autenticar
+gestor -[#6B3FA0]-> cardapio
+gestor -[#6B3FA0]-> listar
+gestor -[#6B3FA0]-> status
+gestor -[#6B3FA0]-> estoque
+
+gateway -[#8C2F2F]-> pagar
+
+legend bottom
+  Verde: cliente. Azul: atendente. Laranja: cozinha. Roxo: gerente/administrador. Vermelho: simulador.
+  O canal do pedido é canalPedido: APP, TOTEM, BALCAO, PICKUP ou WEB.
+  O pagamento é simulado dentro da API, sem chamada de rede.
+  ADMIN e GERENTE usam as mesmas rotas.
+endlegend
+@enduml

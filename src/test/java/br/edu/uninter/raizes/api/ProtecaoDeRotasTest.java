@@ -66,14 +66,13 @@ class ProtecaoDeRotasTest {
     @Test
     void documentacaoNaoExigeToken() throws Exception {
         mockMvc.perform(get("/swagger-ui.html"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("NAO_ENCONTRADO"));
+                .andExpect(status().is3xxRedirection());
         mockMvc.perform(get("/swagger-ui/index.html"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("NAO_ENCONTRADO"));
+                .andExpect(status().isOk());
         mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("NAO_ENCONTRADO"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/pedidos']").exists())
+                .andExpect(jsonPath("$.components.securitySchemes.bearerAuth").exists());
     }
 
     @Test

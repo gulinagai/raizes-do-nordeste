@@ -1,0 +1,56 @@
+@startuml arquitetura
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+package "API" {
+  [Controllers]
+  [DTOs]
+  [Tratamento de erros]
+  [Contratos HTTP]
+}
+
+package "Application" {
+  [PedidoServico]
+  [PagamentoServico]
+  [MovimentacaoEstoqueServico]
+  [FidelidadeServico]
+}
+
+package "Domain" {
+  [Entidades]
+  [Regras de negócio]
+  [Validações]
+}
+
+package "Infrastructure" {
+  [Repositórios JPA]
+  [Flyway]
+  [JWT]
+  [BCrypt]
+  [SimuladorDePagamento]
+}
+
+database "PostgreSQL" as banco
+
+[Controllers] --> [PedidoServico]
+[Controllers] --> [PagamentoServico]
+[Controllers] --> [MovimentacaoEstoqueServico]
+[Controllers] --> [FidelidadeServico]
+[Controllers] --> [DTOs]
+[Tratamento de erros] --> [Contratos HTTP]
+
+[PedidoServico] --> [Entidades]
+[PagamentoServico] --> [Entidades]
+[MovimentacaoEstoqueServico] --> [Entidades]
+[FidelidadeServico] --> [Entidades]
+[PedidoServico] --> [Regras de negócio]
+[PagamentoServico] --> [SimuladorDePagamento]
+[PedidoServico] --> [Repositórios JPA]
+[PagamentoServico] --> [Repositórios JPA]
+[MovimentacaoEstoqueServico] --> [Repositórios JPA]
+[FidelidadeServico] --> [Repositórios JPA]
+
+[Repositórios JPA] --> [Entidades]
+[Flyway] --> banco
+[Repositórios JPA] --> banco
+@enduml

@@ -1,48 +1,48 @@
 # Raízes do Nordeste
 
-API REST para uma rede de restaurantes. O projeto é a atividade prática da trilha de Back-end do Projeto Multidisciplinar da UNINTER, edição 2026.
+API REST da rede de restaurantes Raízes do Nordeste.
 
-A implementação está em andamento e cresce por etapas. Neste momento existem a aplicação Spring Boot, a conexão com o PostgreSQL e o Flyway. Ainda não há entidades, endpoints nem regras de negócio.
+Link do repositório: https://github.com/gulinagai/raizes-do-nordeste
+
+O fluxo principal é criar um pedido, registrar um pagamento simulado e atualizar o status até a entrega. A API também reserva e baixa estoque nesse fluxo, permite entrada e saída manuais e guarda o aceite e o saldo de um programa de pontos. Não há cadastro próprio de produto nem consulta de saldo por unidade.
+
+A implementação prioriza o fluxo A, que contempla o processo de criação, pagamento e entrega de pedidos.
 
 ## Tecnologias
 
-Estas peças já estão configuradas no projeto:
-
-| Peça | Versão em uso |
-|---|---|
-| Java | 21, na imagem de execução `eclipse-temurin:21-jre` |
+| Tecnologia | Versão |
+|-------------------------------------| --- |
+| Java | 21 |
 | Spring Boot | 4.1.2 |
-| Maven | 3.9, usado somente na imagem de build `maven:3.9-eclipse-temurin-21` |
-| PostgreSQL | 16, imagem oficial `postgres:16` |
-| Spring Data JPA e Hibernate | versões trazidas pelo Spring Boot 4.1.2 |
-| Flyway | versão trazida pelo Spring Boot 4.1.2, com o módulo `flyway-database-postgresql` |
-| Driver JDBC do PostgreSQL | versão trazida pelo Spring Boot 4.1.2 |
-| Docker e Docker Compose | execução da API e do banco |
+| Maven | 3.9, na imagem de build |
+| PostgreSQL | 16 |
+| Spring Security | Gerenciado pelo projeto |
+| JJWT | 0.12.6 |
+| Flyway | Gerenciado pelo Spring Boot 4.1.2 |
+| springdoc OpenAPI | 3.2.0 |
 
-## Arquitetura
+A aplicação está organizada nas camadas `api`, `application`, `domain` e `infrastructure`.
 
-O código fica no pacote `br.edu.uninter.raizes` e está separado em quatro camadas:
+O Hibernate não cria tabelas (`ddl-auto=none`), o schema vem do Flyway.
 
-- `api` — reservada para a interface HTTP, com os pacotes `controller`, `dto` e `erro`
-- `application` — reservada para os serviços, no pacote `servico`
-- `domain` — reservada para o modelo, com os pacotes `entidade`, `enumeracao` e `excecao`
-- `infrastructure` — reservada para os detalhes técnicos, com os pacotes `persistencia`, `pagamento`, `seguranca` e `auditoria`
+## Requisitos
 
-A única classe existente é `RaizesDoNordesteApplication`. Os demais pacotes ainda não têm classes.
-
-## Pré-requisitos
-
-Para executar a aplicação basta ter instalado:
+Para subir a API e o banco:
 
 - Docker
 - Docker Compose
 - Git
 
-Java e Maven não são necessários na máquina local. O build e a execução acontecem dentro dos containers.
+Para a suíte automatizada, na máquina local:
 
-## Configuração do ambiente
+- JDK 21
+- Maven, disponível no `PATH` como `mvn`
 
-As credenciais e as portas publicadas ficam no arquivo `.env`, na raiz do projeto. Esse arquivo não é versionado.
+O repositório não tem Maven Wrapper. O build da imagem baixa as dependências do `pom.xml` dentro do container.
+
+## Variáveis de ambiente
+
+Copie o exemplo e ajuste a senha do banco e a chave do JWT antes de subir os containers.
 
 ```bash
 cp .env.example .env
@@ -54,103 +54,107 @@ No Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-Abra o `.env` e troque a senha de exemplo antes de subir os containers.
+| Variável | Finalidade |
+| --- | --- |
+| `POSTGRES_DB` | Nome do banco criado na primeira inicialização do volume |
+| `POSTGRES_USER` | Usuário criado nessa inicialização |
+| `POSTGRES_PASSWORD` | Senha desse usuário. Troque o valor de exemplo |
+| `POSTGRES_PORT` | Porta do PostgreSQL publicada na máquina. O padrão é `5432` |
+| `API_PORT` | Porta da API publicada na máquina. O padrão é `8080` |
+| `JWT_SECRET` | Chave HMAC-SHA256. Precisa ter pelo menos 32 bytes. Troque o valor de exemplo |
+| `JWT_EXPIRATION_SECONDS` | Validade do token, em segundos. O padrão é `3600` |
 
-| Variável | Quem usa | Finalidade |
-|---|---|---|
-| `POSTGRES_DB` | PostgreSQL e API | Nome do banco criado na primeira inicialização do volume |
-| `POSTGRES_USER` | PostgreSQL e API | Usuário criado nessa mesma inicialização |
-| `POSTGRES_PASSWORD` | PostgreSQL e API | Senha desse usuário |
-| `POSTGRES_PORT` | Docker Compose | Porta do banco publicada na máquina local |
-| `API_PORT` | Docker Compose | Porta da API publicada na máquina local |
+O arquivo `.env` não é versionado. O Compose repassa o banco para a API como `DB_HOST=postgres`, `DB_PORT=5432`, `DB_NAME`, `DB_USER` e `DB_PASSWORD`. Dentro da rede Docker o host do banco é o serviço `postgres`, não `localhost`.
 
-O Compose entrega à API estas variáveis, montadas a partir da tabela acima:
+`POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` só valem quando o volume do PostgreSQL é criado. Um volume antigo não muda de senha porque o `.env` mudou.
 
-- `DB_NAME`, `DB_USER` e `DB_PASSWORD`, com os mesmos valores de `POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD`
-- `DB_PORT=5432`, que é a porta do PostgreSQL dentro da rede Docker, e não a porta publicada na máquina
-- `DB_HOST=postgres`, que é o nome do serviço do banco na rede `raizes`
+## Banco, migrations e seed
 
-A aplicação monta a URL JDBC com esses valores em `src/main/resources/application.properties`. Os dois containers são independentes e se encontram por essa rede. A API não usa `localhost` para alcançar o banco.
+O PostgreSQL sobe com o Compose. Na inicialização da API, o Flyway aplica os scripts de `src/main/resources/db/migration`, da V1 à V12.
 
-`POSTGRES_DB`, `POSTGRES_USER` e `POSTGRES_PASSWORD` só são aplicados pelo PostgreSQL quando o volume de dados é criado. Um volume que já existe não muda de senha porque o `.env` foi alterado.
+O seed está nessas migrations. A V2 cria cinco usuários de demonstração. A V4 cria a matriz, a filial, três produtos e o estoque inicial. O Baião de dois, na matriz, começa com 40 unidades a R$ 34,90.
 
-Se o arquivo `.env` não existir, o Compose usa os valores padrão escritos em `docker-compose.yml`.
+## Subir a API
 
-## Executando o projeto
-
-1. Clone o repositório e entre na pasta do projeto.
-2. Crie o `.env` a partir do `.env.example`, como na seção anterior.
-3. Suba a API e o banco:
+Na raiz do projeto, com o `.env` já ajustado:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
-4. Acompanhe os logs. O PostgreSQL precisa ficar saudável antes de a API iniciar. A aplicação está no ar quando o log mostra `Started RaizesDoNordesteApplication`.
-5. Acesse `http://localhost:8080` se `API_PORT` continuar `8080`. Ainda não há endpoints implementados. A raiz responde 404, e isso indica que o servidor subiu.
-
-Outros comandos:
+O banco precisa ficar saudável antes da API. A aplicação está no ar quando o log mostra `Started RaizesDoNordesteApplication`.
 
 ```bash
-docker compose logs -f
-docker compose down
-docker compose up --build
+docker compose logs -f api
 ```
 
-`docker compose logs -f` acompanha a saída dos dois serviços. `Ctrl+C` fecha o acompanhamento e não apaga os containers que foram iniciados em segundo plano.
+Com `API_PORT=8080`, a base é `http://localhost:8080`.
 
-`docker compose down` para e remove os containers e a rede. O volume `raizes-postgres-data` permanece, e os dados do banco continuam disponíveis na próxima subida.
-
-`docker compose down -v` também remove esse volume. Esse comando apaga o banco persistido. Ele não faz parte do uso normal. Use somente quando quiser descartar os dados de propósito, por exemplo para recriar usuário e senha.
-
-`docker compose up --build` reconstrói a imagem da API quando o código ou o `Dockerfile` mudam, e em seguida sobe os dois serviços.
-
-## Banco de dados e migrations
-
-O banco é PostgreSQL 16. O Flyway executa as migrations automaticamente na inicialização da aplicação. Os arquivos SQL ficam em `src/main/resources/db/migration`.
-
-Ainda não há migration de negócio. Na primeira subida, o Flyway cria apenas a tabela de controle `flyway_schema_history` e registra que não havia script a aplicar. O Hibernate está com `ddl-auto=none` e não cria tabelas.
+`docker compose down` para os containers e mantém o volume `raizes-postgres-data`. `docker compose down -v` apaga esse volume e, com ele, o banco. Use só quando quiser recriar os dados do zero. O Flyway não reaplica o seed em um banco que já passou pelas migrations.
 
 ## Documentação da API
 
-O Swagger/OpenAPI ainda não está configurado. Não há URL de documentação neste momento.
+Com a API no ar:
+
+- Swagger UI: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- OpenAPI: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+As duas rotas são públicas. No Swagger, informe só o `accessToken` obtido no login, a interface acrescenta o prefixo `Bearer`.
+
+## Autenticação
+
+O login é `POST /auth/login` e devolve um JWT. Cadastro e login são públicos. As outras rotas da API exigem o token.
+
+Os usuários de demonstração usam a senha `Raizes@2026`:
+
+| E-mail | Perfil |
+| --- | --- |
+| `admin@raizes.test` | ADMIN |
+| `gerente@raizes.test` | GERENTE |
+| `atendente@raizes.test` | ATENDENTE |
+| `cozinha@raizes.test` | COZINHA |
+| `cliente@raizes.test` | CLIENTE |
+
+O cliente opera os próprios pedidos e a fidelidade. A cozinha avança o pedido para `PRONTO`. O atendente avança para `ENTREGUE`. Estoque manual fica com ADMIN e GERENTE.
 
 ## Testes
 
-Não há testes automatizados no projeto. O build da imagem usa `mvn -DskipTests package` porque não existe suíte para executar.
+### Suíte automatizada
 
-## Estrutura do projeto
+Suba só o PostgreSQL e exporte as mesmas credenciais do `.env`, porque os testes usam o banco publicado em `localhost`. O perfil `test` define o JWT da suíte. As variáveis de conexão, se não forem informadas, usam os padrões `localhost:5432`, banco `raizes`, usuário `raizes` e senha `raizes`.
 
-```text
-raizes-do-nordeste/
-├── src/main/java/br/edu/uninter/raizes/
-│   ├── RaizesDoNordesteApplication.java
-│   ├── api/
-│   │   ├── controller/
-│   │   ├── dto/
-│   │   └── erro/
-│   ├── application/
-│   │   └── servico/
-│   ├── domain/
-│   │   ├── entidade/
-│   │   ├── enumeracao/
-│   │   └── excecao/
-│   └── infrastructure/
-│       ├── auditoria/
-│       ├── pagamento/
-│       ├── persistencia/
-│       └── seguranca/
-├── src/main/resources/
-│   ├── application.properties
-│   └── db/migration/
-├── .dockerignore
-├── .env.example
-├── .gitignore
-├── docker-compose.yml
-├── Dockerfile
-├── LICENSE
-├── pom.xml
-└── README.md
+```powershell
+docker compose up -d postgres
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "5432"
+$env:DB_NAME = "raizes"
+$env:DB_USER = "raizes_usuario"
+$env:DB_PASSWORD = "altere-esta-senha"
+mvn clean verify
 ```
 
-Os diretórios de `api`, `application`, `domain` e `infrastructure` estão vazios de classes. A pasta `db/migration` ainda não contém scripts SQL.
+Troque `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASSWORD` pelos valores do seu `.env`. `DB_USER` e `DB_PASSWORD` precisam ser os de `POSTGRES_USER` e `POSTGRES_PASSWORD`. O exemplo acima utiliza os valores de conexão definidos no `.env.example`, considerando que eles correspondam aos valores informados no comando.
+
+A suíte sobe a aplicação de teste, aplica o Flyway se ainda houver migration pendente e desfaz os dados de cada teste ao final. A API em Docker não precisa estar no ar.
+
+### Coleção Postman
+
+A coleção e o plano estão em:
+
+- `docs/entrega-final/postman/raizes-do-nordeste.postman_collection.json`
+- `docs/entrega-final/postman/plano-de-testes.md`
+
+Importe a coleção no Postman e execute de cima para baixo, com a API no ar. Os logins gravam os tokens. A ordem, as pré-condições e o efeito no estoque estão no plano. Cada execução completa do fluxo baixa uma unidade do Baião de dois na matriz.
+
+Privacidade, segurança e o que a API não faz em relação à LGPD estão em `docs/entrega-final/privacidade-seguranca-lgpd.md`.
+
+## O que a API oferece
+
+- `POST /usuarios` e `POST /auth/login`, além de `GET /auth/me`
+- `GET /unidades/{id}/cardapio`
+- `POST /pedidos`, `GET /pedidos`, `PATCH /pedidos/{id}/status` e `PATCH /pedidos/{id}/cancelamento`
+- `POST /pagamentos`, com resultado simulado
+- `POST /estoque/movimentacoes`
+- `GET /fidelidade`, `PUT /fidelidade` e `POST /fidelidade/resgates`
+
+As falhas usam o mesmo JSON, com `error`, `message`, `details`, `timestamp`, `path` e `requestId`. Validação responde 422.

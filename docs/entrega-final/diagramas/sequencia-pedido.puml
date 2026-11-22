@@ -1,0 +1,60 @@
+@startuml sequencia-pedido
+skinparam shadowing false
+skinparam ParticipantPadding 48
+skinparam sequenceMessageAlign center
+
+actor Cliente
+actor Cozinha
+actor Atendente
+participant "PedidoController" as PedidoApi
+participant "PedidoServico" as Pedidos
+participant "Estoque" as Estoque
+participant "PagamentoController" as PagamentoApi
+participant "PagamentoServico" as Pagamentos
+participant "SimuladorDePagamento" as Simulador
+
+Cliente -> PedidoApi : POST /pedidos
+PedidoApi -> Pedidos : criar pedido
+alt estoque insuficiente
+  Pedidos --> Cliente : 409 ESTOQUE_INSUFICIENTE
+else unidade ou produto inativo
+  Pedidos --> Cliente : 409 RECURSO_INATIVO
+else recurso inexistente
+  Pedidos --> Cliente : 404
+else quantidade disponível
+  Pedidos -> Estoque : aumenta quantidadeReservada
+  Pedidos --> Cliente : 201 AGUARDANDO_PAGAMENTO
+end
+
+Cliente -> PagamentoApi : POST /pagamentos
+PagamentoApi -> Pagamentos : solicitar
+Pagamentos -> Simulador : simular
+alt simulador indisponível
+  Simulador --> Pagamentos : INDISPONIVEL
+  Pagamentos --> Cliente : 503, sem gravar pagamento
+else pagamento recusado
+  Simulador --> Pagamentos : RECUSADO
+  Pagamentos -> Estoque : libera a reserva
+  Pagamentos --> Cliente : 201 PAGAMENTO_RECUSADO
+else pagamento aprovado
+  Simulador --> Pagamentos : APROVADO
+  Pagamentos -> Estoque : baixa reserva e quantidadeTotal
+  Pagamentos --> Cliente : 201 EM_PREPARO
+end
+
+Cozinha -> PedidoApi : PATCH /pedidos/{id}/status PRONTO
+PedidoApi -> Pedidos : atualizarStatus
+alt transição não permitida
+  Pedidos --> Cozinha : 409 TRANSICAO_NAO_PERMITIDA
+else pedido em EM_PREPARO
+  Pedidos --> Cozinha : 200 PRONTO
+end
+
+Atendente -> PedidoApi : PATCH /pedidos/{id}/status ENTREGUE
+PedidoApi -> Pedidos : atualizarStatus
+alt transição não permitida
+  Pedidos --> Atendente : 409 TRANSICAO_NAO_PERMITIDA
+else pedido em PRONTO
+  Pedidos --> Atendente : 200 ENTREGUE
+end
+@enduml

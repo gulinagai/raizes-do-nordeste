@@ -1,0 +1,105 @@
+@startuml classes
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+class Usuario {
+  id
+  nome
+  email
+  senhaHash
+  perfil
+  ativo
+}
+
+class Unidade {
+  id
+  nome
+  cidade
+  endereco
+  tipo
+  ativo
+}
+
+class Produto {
+  id
+  nome
+  descricao
+  preco
+  ativo
+}
+
+class Estoque {
+  id
+  quantidadeTotal
+  quantidadeReservada
+  quantidadeDisponivel()
+}
+
+class MovimentacaoEstoque {
+  id
+  tipo
+  quantidade
+  dataHora
+  observacao
+}
+
+class Pedido {
+  id
+  canalPedido
+  status
+  dataCriacao
+  valorTotal
+  pontosResgatados
+  desconto
+  pontosCreditados
+  resgateEstornado
+  avancarStatus(destino)
+  cancelar()
+}
+
+class ItemPedido {
+  id
+  quantidade
+  precoUnitario
+}
+
+class Pagamento {
+  id
+  status
+  valor
+  dataHora
+}
+
+class Fidelidade {
+  id
+  consentimento
+  dataConsentimento
+  dataRevogacao
+  saldo
+  definirConsentimento(aceito)
+  creditar(pontos)
+  debitar(pontos)
+  estornar(pontos)
+}
+
+class RegistroAuditoria {
+  id
+  acao
+  recurso
+  recursoId
+  resultado
+  dataHora
+}
+
+Unidade "0..1" <-- "0..*" Unidade : unidadeMatriz
+Usuario "1" <-- "*" Pedido : cliente
+Unidade "1" <-- "*" Pedido
+Pedido "1" *-- "1..*" ItemPedido
+Produto "1" <-- "*" ItemPedido
+Unidade "1" <-- "*" Estoque
+Produto "1" <-- "*" Estoque
+Estoque "1" <-- "*" MovimentacaoEstoque
+Pedido "1" <-- "0..1" Pagamento
+Usuario "1" <-- "0..1" Fidelidade
+Usuario "0..1" <-- "*" RegistroAuditoria
+@enduml

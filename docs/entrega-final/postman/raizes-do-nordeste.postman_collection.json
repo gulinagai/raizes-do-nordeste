@@ -1,0 +1,616 @@
+{
+  "info": {
+    "name": "Raízes do Nordeste",
+    "description": "Fluxo A da API: pedido, pagamento simulado e atualização de status.\n\nExecute a coleção de cima para baixo. Os logins gravam os tokens e o clienteId. T03 grava o pedido aprovado. A preparação do T07 grava o pedido que será recusado.\n\nA senha é a de demonstração do seed. A chave do JWT não faz parte desta coleção.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "senha", "value": "Raizes@2026" },
+    { "key": "emailCliente", "value": "cliente@raizes.test" },
+    { "key": "emailCozinha", "value": "cozinha@raizes.test" },
+    { "key": "emailAtendente", "value": "atendente@raizes.test" },
+    { "key": "unidadeId", "value": "1" },
+    { "key": "produtoId", "value": "1" },
+    { "key": "clienteId", "value": "" },
+    { "key": "accessTokenCliente", "value": "" },
+    { "key": "accessTokenCozinha", "value": "" },
+    { "key": "accessTokenAtendente", "value": "" },
+    { "key": "pedidoId", "value": "" },
+    { "key": "pedidoRecusadoId", "value": "" }
+  ],
+  "auth": { "type": "noauth" },
+  "item": [
+    {
+      "name": "Autenticação",
+      "description": "Login dos perfis usados no fluxo e consulta do token do cliente.",
+      "item": [
+        {
+          "name": "T01 — Login válido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('token e perfil CLIENTE', function () {",
+                  "    pm.expect(corpo.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(corpo.tokenType).to.eql('Bearer');",
+                  "    pm.expect(corpo.user.perfil).to.eql('CLIENTE');",
+                  "    pm.expect(corpo.user.id).to.be.a('number');",
+                  "});",
+                  "if (pm.response.code === 200 && corpo.accessToken) {",
+                  "    pm.collectionVariables.set('accessTokenCliente', corpo.accessToken);",
+                  "    pm.collectionVariables.set('clienteId', String(corpo.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailCliente}}\",\n  \"senha\": \"{{senha}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Pré-condição: seed aplicado e API no ar.\n\nEntrada: e-mail e senha do cliente de demonstração.\n\nGrava accessTokenCliente e clienteId para os cenários seguintes. A operação é pública."
+          }
+        },
+        {
+          "name": "Preparação — Login da cozinha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('perfil COZINHA', function () {",
+                  "    pm.expect(corpo.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(corpo.user.perfil).to.eql('COZINHA');",
+                  "});",
+                  "if (pm.response.code === 200 && corpo.accessToken) {",
+                  "    pm.collectionVariables.set('accessTokenCozinha', corpo.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailCozinha}}\",\n  \"senha\": \"{{senha}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Requisição auxiliar, não é um cenário numerado.\n\nPré-condição: seed aplicado.\n\nGrava accessTokenCozinha para T05 e T09."
+          }
+        },
+        {
+          "name": "Preparação — Login do atendente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('perfil ATENDENTE', function () {",
+                  "    pm.expect(corpo.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.expect(corpo.user.perfil).to.eql('ATENDENTE');",
+                  "});",
+                  "if (pm.response.code === 200 && corpo.accessToken) {",
+                  "    pm.collectionVariables.set('accessTokenAtendente', corpo.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailAtendente}}\",\n  \"senha\": \"{{senha}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Requisição auxiliar, não é um cenário numerado.\n\nPré-condição: seed aplicado.\n\nGrava accessTokenAtendente para T06."
+          }
+        },
+        {
+          "name": "T02 — Consulta do usuário autenticado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('mesmo usuário do token', function () {",
+                  "    pm.expect(corpo.id).to.eql(Number(pm.collectionVariables.get('clienteId')));",
+                  "    pm.expect(corpo.perfil).to.eql('CLIENTE');",
+                  "    pm.expect(corpo.nome).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Pré-condição: T01 executado.\n\nUsa o accessToken do cliente, sem o prefixo Bearer digitado à mão. O Postman acrescenta o prefixo.\n\nEsperado: 200, com o id e o perfil CLIENTE do login."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos",
+      "description": "Criação do pedido que será aprovado e do pedido que será recusado.",
+      "item": [
+        {
+          "name": "T03 — Criação de pedido válido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('pedido aguardando pagamento', function () {",
+                  "    pm.expect(corpo.status).to.eql('AGUARDANDO_PAGAMENTO');",
+                  "    pm.expect(corpo.canalPedido).to.eql('APP');",
+                  "    pm.expect(corpo.unidadeId).to.eql(Number(pm.collectionVariables.get('unidadeId')));",
+                  "    pm.expect(corpo.clienteId).to.eql(Number(pm.collectionVariables.get('clienteId')));",
+                  "    pm.expect(Number(corpo.total).toFixed(2)).to.eql('34.90');",
+                  "    pm.expect(corpo.itens[0].produtoId).to.eql(Number(pm.collectionVariables.get('produtoId')));",
+                  "    pm.expect(corpo.itens[0].quantidade).to.eql(1);",
+                  "    pm.expect(Number(corpo.itens[0].precoUnitario).toFixed(2)).to.eql('34.90');",
+                  "});",
+                  "if (pm.response.code === 201 && corpo.id) {",
+                  "    pm.collectionVariables.set('pedidoId', String(corpo.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 1 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: T01. Unidade 1 (Raízes Matriz Recife) e produto 1 (Baião de dois, R$ 34,90) existem no seed, com quantidade disponível.\n\nO cliente só pode informar o próprio clienteId. O pedido reserva 1 unidade e não baixa o estoque físico.\n\nGrava pedidoId para T04, T05 e T06."
+          }
+        },
+        {
+          "name": "Preparação — Segundo pedido para recusa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('segundo pedido aguardando pagamento', function () {",
+                  "    pm.expect(corpo.status).to.eql('AGUARDANDO_PAGAMENTO');",
+                  "    pm.expect(corpo.id).to.not.eql(Number(pm.collectionVariables.get('pedidoId')));",
+                  "});",
+                  "if (pm.response.code === 201 && corpo.id) {",
+                  "    pm.collectionVariables.set('pedidoRecusadoId', String(corpo.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 1 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição do T07, não é um cenário numerado.\n\nCria outro pedido em AGUARDANDO_PAGAMENTO. O pedido de T03 não pode ser reutilizado: depois do pagamento aprovado, um novo pagamento responde 409.\n\nGrava pedidoRecusadoId."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagamentos",
+      "description": "Pagamento simulado do pedido aprovado e do pedido recusado.",
+      "item": [
+        {
+          "name": "T04 — Pagamento aprovado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('aprovado e pedido em preparo', function () {",
+                  "    pm.expect(corpo.status).to.eql('APROVADO');",
+                  "    pm.expect(corpo.statusPedido).to.eql('EM_PREPARO');",
+                  "    pm.expect(corpo.pedidoId).to.eql(Number(pm.collectionVariables.get('pedidoId')));",
+                  "    pm.expect(Number(corpo.valor).toFixed(2)).to.eql('34.90');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": {{pedidoId}},\n  \"resultadoSimulado\": \"APROVADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pagamentos",
+            "description": "Pré-condição: T03. O pedido está em AGUARDANDO_PAGAMENTO.\n\nO valor cobrado é o total do pedido. A aprovação libera a reserva, baixa 1 unidade do estoque físico e grava o pagamento.\n\nEsperado: 201, status APROVADO e statusPedido EM_PREPARO."
+          }
+        },
+        {
+          "name": "T07 — Pagamento recusado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('recusado e pedido com pagamento recusado', function () {",
+                  "    pm.expect(corpo.status).to.eql('RECUSADO');",
+                  "    pm.expect(corpo.statusPedido).to.eql('PAGAMENTO_RECUSADO');",
+                  "    pm.expect(corpo.pedidoId).to.eql(Number(pm.collectionVariables.get('pedidoRecusadoId')));",
+                  "    pm.expect(Number(corpo.valor).toFixed(2)).to.eql('34.90');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pedidoId\": {{pedidoRecusadoId}},\n  \"resultadoSimulado\": \"RECUSADO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pagamentos",
+            "description": "Pré-condição: a preparação do segundo pedido.\n\nA recusa é um resultado aceito pelo contrato e responde 201. Libera a reserva e não baixa o estoque físico. O pedido fica PAGAMENTO_RECUSADO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Atualização de status",
+      "description": "Continuidade do Fluxo A depois do pagamento aprovado. Fica depois da pasta Pagamentos para o runner respeitar a sequência EM_PREPARO, PRONTO e ENTREGUE.",
+      "item": [
+        {
+          "name": "T05 — Atualização do pedido pela cozinha",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('status PRONTO', function () {",
+                  "    pm.expect(corpo.id).to.eql(Number(pm.collectionVariables.get('pedidoId')));",
+                  "    pm.expect(corpo.status).to.eql('PRONTO');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCozinha}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PRONTO\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos/{{pedidoId}}/status",
+            "description": "Pré-condição: T04 deixou o pedido em EM_PREPARO e o login da cozinha gravou o token.\n\nA cozinha só pode pedir PRONTO. A transição aceita neste ponto é EM_PREPARO para PRONTO."
+          }
+        },
+        {
+          "name": "T06 — Atualização do pedido pelo atendente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('status ENTREGUE', function () {",
+                  "    pm.expect(corpo.id).to.eql(Number(pm.collectionVariables.get('pedidoId')));",
+                  "    pm.expect(corpo.status).to.eql('ENTREGUE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenAtendente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ENTREGUE\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos/{{pedidoId}}/status",
+            "description": "Pré-condição: T05 deixou o pedido em PRONTO e o login do atendente gravou o token.\n\nO atendente só pode pedir ENTREGUE. A transição aceita neste ponto é PRONTO para ENTREGUE."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Erros e validações",
+      "description": "Cenários negativos. Nenhum deles grava pedido nem consome estoque.",
+      "item": [
+        {
+          "name": "T08 — Acesso sem token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 401', function () { pm.response.to.have.status(401); });",
+                  "pm.test('não autenticado', function () {",
+                  "    pm.expect(corpo.error).to.eql('NAO_AUTENTICADO');",
+                  "    pm.expect(corpo.message).to.be.a('string').and.not.empty;",
+                  "    pm.expect(corpo.path).to.eql('/pedidos');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "header": [],
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: nenhuma.\n\nNão envia Authorization.\n\nEsperado: 401 e error NAO_AUTENTICADO. Credencial inválida no login usa outro código, CREDENCIAIS_INVALIDAS, e não faz parte deste cenário."
+          }
+        },
+        {
+          "name": "T09 — Perfil sem permissão",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 403', function () { pm.response.to.have.status(403); });",
+                  "pm.test('acesso negado', function () {",
+                  "    pm.expect(corpo.error).to.eql('ACESSO_NEGADO');",
+                  "    pm.expect(corpo.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCozinha}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 1 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: login da cozinha.\n\nA cozinha não cria pedido. A autorização responde antes de gravar.\n\nEsperado: 403 e error ACESSO_NEGADO."
+          }
+        },
+        {
+          "name": "T10 — Campo obrigatório ausente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('validação do campo itens', function () {",
+                  "    pm.expect(corpo.error).to.eql('VALIDACAO');",
+                  "    const itens = (corpo.details || []).find(function (detalhe) { return detalhe.field === 'itens'; });",
+                  "    pm.expect(itens).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: token do cliente.\n\nO corpo omite itens.\n\nEsperado: 422, error VALIDACAO e um detalhe no campo itens. Nada é gravado."
+          }
+        },
+        {
+          "name": "T11 — Quantidade inválida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('quantidade deve ser maior que zero', function () {",
+                  "    pm.expect(corpo.error).to.eql('VALIDACAO');",
+                  "    const quantidade = (corpo.details || []).find(function (detalhe) {",
+                  "        return detalhe.field === 'itens[0].quantidade';",
+                  "    });",
+                  "    pm.expect(quantidade).to.be.an('object');",
+                  "    pm.expect(quantidade.issue).to.eql('deve ser maior que zero');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 0 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: token do cliente.\n\nA quantidade 0 viola o mínimo de 1.\n\nEsperado: 422, error VALIDACAO, campo itens[0].quantidade e issue deve ser maior que zero."
+          }
+        },
+        {
+          "name": "T12 — Unidade inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('recurso não encontrado', function () {",
+                  "    pm.expect(corpo.error).to.eql('NAO_ENCONTRADO');",
+                  "    pm.expect(corpo.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": 9999,\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 1 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: token do cliente. A unidade 9999 não existe no seed.\n\nEsperado: 404 e error NAO_ENCONTRADO. O cliente informado é o próprio usuário, então a falha não é de permissão."
+          }
+        },
+        {
+          "name": "T13 — Estoque insuficiente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corpo = pm.response.json();",
+                  "pm.test('HTTP 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('estoque insuficiente', function () {",
+                  "    pm.expect(corpo.error).to.eql('ESTOQUE_INSUFICIENTE');",
+                  "    const quantidade = (corpo.details || []).find(function (detalhe) {",
+                  "        return detalhe.field === 'itens[0].quantidade';",
+                  "    });",
+                  "    pm.expect(quantidade).to.be.an('object');",
+                  "    pm.expect(quantidade.issue).to.include('Disponível:');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{accessTokenCliente}}", "type": "string" }]
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unidadeId\": {{unidadeId}},\n  \"clienteId\": {{clienteId}},\n  \"canalPedido\": \"APP\",\n  \"itens\": [\n    { \"produtoId\": {{produtoId}}, \"quantidade\": 100000 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/pedidos",
+            "description": "Pré-condição: token do cliente. O Baião de dois da matriz tem dezenas de unidades no seed, bem abaixo de 100000.\n\nA reserva não é parcial e o pedido não é gravado.\n\nEsperado: 409 e error ESTOQUE_INSUFICIENTE."
+          }
+        }
+      ]
+    }
+  ]
+}
