@@ -13,6 +13,7 @@ import br.edu.uninter.raizes.infrastructure.seguranca.UsuarioAutenticado;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -88,7 +89,34 @@ public class PedidoController {
                     Antes do pagamento a reserva é liberada. Depois do pagamento o estoque físico volta. \
                     Pontos já resgatados retornam ao saldo.""")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Pedido cancelado."),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Pedido cancelado.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PedidoResposta.class),
+                            examples = @ExampleObject(
+                                    name = "Pedido cancelado",
+                                    value = """
+                                            {
+                                              "id": 20,
+                                              "unidadeId": 1,
+                                              "clienteId": 5,
+                                              "canalPedido": "APP",
+                                              "status": "CANCELADO",
+                                              "total": 34.90,
+                                              "desconto": 0.00,
+                                              "pontosResgatados": 0,
+                                              "itens": [
+                                                {
+                                                  "produtoId": 1,
+                                                  "quantidade": 1,
+                                                  "precoUnitario": 34.90
+                                                }
+                                              ],
+                                              "dataCriacao": "2026-11-16T18:00:00Z"
+                                            }
+                                            """))),
             @ApiResponse(
                     responseCode = "401",
                     description = "Token ausente ou inválido. O código do corpo é NAO_AUTENTICADO.",
@@ -126,7 +154,34 @@ public class PedidoController {
                     ADMIN e GERENTE seguem a mesma sequência: EM_PREPARO para PRONTO e PRONTO para ENTREGUE. \
                     A entrega com consentimento ativo credita um ponto por real inteiro pago.""")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Status avançado."),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Status avançado.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PedidoResposta.class),
+                            examples = @ExampleObject(
+                                    name = "Pedido pronto",
+                                    value = """
+                                            {
+                                              "id": 20,
+                                              "unidadeId": 1,
+                                              "clienteId": 5,
+                                              "canalPedido": "APP",
+                                              "status": "PRONTO",
+                                              "total": 34.90,
+                                              "desconto": 0.00,
+                                              "pontosResgatados": 0,
+                                              "itens": [
+                                                {
+                                                  "produtoId": 1,
+                                                  "quantidade": 1,
+                                                  "precoUnitario": 34.90
+                                                }
+                                              ],
+                                              "dataCriacao": "2026-11-16T18:00:00Z"
+                                            }
+                                            """))),
             @ApiResponse(
                     responseCode = "401",
                     description = "Token ausente ou inválido. O código do corpo é NAO_AUTENTICADO.",
@@ -164,7 +219,34 @@ public class PedidoController {
                     Perfis ADMIN, GERENTE, ATENDENTE e CLIENTE. O cliente só cria pedido para o próprio identificador. \
                     O pedido nasce em AGUARDANDO_PAGAMENTO e reserva a quantidade disponível, sem baixar o estoque físico.""")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Pedido criado."),
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Pedido criado.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = PedidoResposta.class),
+                            examples = @ExampleObject(
+                                    name = "Pedido criado",
+                                    value = """
+                                            {
+                                              "id": 20,
+                                              "unidadeId": 1,
+                                              "clienteId": 5,
+                                              "canalPedido": "APP",
+                                              "status": "AGUARDANDO_PAGAMENTO",
+                                              "total": 34.90,
+                                              "desconto": 0.00,
+                                              "pontosResgatados": 0,
+                                              "itens": [
+                                                {
+                                                  "produtoId": 1,
+                                                  "quantidade": 1,
+                                                  "precoUnitario": 34.90
+                                                }
+                                              ],
+                                              "dataCriacao": "2026-11-16T18:00:00Z"
+                                            }
+                                            """))),
             @ApiResponse(
                     responseCode = "401",
                     description = "Token ausente ou inválido. O código do corpo é NAO_AUTENTICADO.",
