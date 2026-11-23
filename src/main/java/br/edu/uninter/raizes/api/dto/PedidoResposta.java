@@ -18,7 +18,7 @@ public record PedidoResposta(
         Long clienteId,
         @Schema(description = "Canal de origem.", example = "APP")
         CanalPedido canalPedido,
-        @Schema(description = "Situação atual.", example = "AGUARDANDO_PAGAMENTO")
+        @Schema(description = "Situação atual.")
         StatusPedido status,
         @Schema(description = "Valor a pagar, depois do desconto.", example = "34.90")
         BigDecimal total,
